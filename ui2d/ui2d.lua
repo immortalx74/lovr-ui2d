@@ -272,7 +272,7 @@ function UI2D.InputInfo()
 end
 
 function UI2D.Begin( name, x, y, is_modal )
-	local exists, idx = WindowExists( name )
+	local exists, idx = WindowExists( name ) -- TODO: Can't currently change window title on runtime
 
 	if not exists then
 		local window = {
@@ -284,6 +284,8 @@ function UI2D.Begin( name, x, y, is_modal )
 			h = 0,
 			command_list = {},
 			texture = nil,
+			texture_w = 0,
+			texture_h = 0,
 			pass = nil,
 			is_hovered = false,
 			is_modal = is_modal or false
@@ -304,8 +306,19 @@ function UI2D.End( main_pass )
 	cur_window.w = layout.total_w
 	cur_window.h = layout.total_h
 
-	if not cur_window.texture then
+	-- Cache texture
+	if cur_window.texture then
+		if cur_window.texture_w ~= cur_window.w or cur_window.texture_h ~= cur_window.h then
+			cur_window.texture:release()
+			cur_window.texture_w = cur_window.w
+			cur_window.texture_h = cur_window.h
+			cur_window.texture = lovr.graphics.newTexture( cur_window.w, cur_window.h, texture_flags )
+			cur_window.pass:setCanvas( cur_window.texture )
+		end
+	else
 		cur_window.texture = lovr.graphics.newTexture( cur_window.w, cur_window.h, texture_flags )
+		cur_window.texture_w = cur_window.w
+		cur_window.texture_h = cur_window.h
 		cur_window.pass = lovr.graphics.newPass( cur_window.texture )
 	end
 
@@ -330,6 +343,7 @@ function UI2D.End( main_pass )
 	table.insert( windows[ begin_idx ].command_list,
 		{ type = "rect_wire", bbox = { x = 0, y = 0, w = cur_window.w, h = cur_window.h }, color = colors.window_border } )
 
+	-- Do draw commands
 	for i, v in ipairs( cur_window.command_list ) do
 		if v.type == "rect_fill" then
 			if v.is_separator then
@@ -375,6 +389,17 @@ function UI2D.End( main_pass )
 	main_pass:setMaterial()
 
 	ResetLayout()
+end
+
+function UI2D.SetWindowPosition( id, x, y )
+	local exists, idx = WindowExists( id )
+	if exists then
+		windows[ idx ].x = x
+		windows[ idx ].y = y
+		return true
+	end
+
+	return false
 end
 
 function UI2D.SameLine()

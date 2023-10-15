@@ -5,6 +5,7 @@ local win1_pos_x = 300
 local win1_pos_y = 300
 local sl1 = 20
 local sl2 = 10
+local txt = "sample text"
 
 function lovr.load()
 	UI2D.Init()
@@ -14,11 +15,16 @@ function lovr.update( dt )
 	UI2D.InputInfo()
 end
 
+function lovr.keypressed( key, scancode, repeating )
+	-- txt = txt .. "0"
+	-- UI2D.SetWindowPosition( "third##blah", 100, 150 )
+end
+
 function lovr.draw( pass )
 	pass:setProjection( 1, mat4():orthographic( pass:getDimensions() ) )
 	UI2D.NewFrame( pass )
 
-	UI2D.Begin( "first", 300,300 )
+	UI2D.Begin( "first", 300, 300 )
 	if UI2D.Button( "first button" ) then
 		print( "from 1st button" )
 	end
@@ -34,11 +40,15 @@ function lovr.draw( pass )
 	end
 	UI2D.End( pass )
 
-	UI2D.Begin( "third", 350, 240 )
+	UI2D.Begin( "third##blah", 350, 240 )
 	UI2D.Button( "blah1" )
 	UI2D.Button( "blah2" )
 	UI2D.SameLine()
 	released, sl2 = UI2D.SliderInt( "hello", sl2, 0, 100 )
+	UI2D.End( pass )
+
+	UI2D.Begin( "time", 150, 100 )
+	UI2D.Button( txt )
 	UI2D.End( pass )
 
 	local ui_passes = UI2D.RenderFrame( pass )
@@ -46,5 +56,6 @@ function lovr.draw( pass )
 	pass:setColor( 1, 0, 0 )
 	pass:plane( 100, 100, 0, 100, 100 )
 	table.insert( ui_passes, pass )
+	print( #ui_passes )
 	return lovr.graphics.submit( ui_passes )
 end
