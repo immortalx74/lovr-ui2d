@@ -8,7 +8,7 @@ local sl2 = 10
 local txt = "sample text"
 
 function lovr.load()
-	UI2D.Init()
+	UI2D.Init(16)
 end
 
 function lovr.update( dt )
@@ -24,7 +24,7 @@ function lovr.draw( pass )
 	pass:setProjection( 1, mat4():orthographic( pass:getDimensions() ) )
 	UI2D.NewFrame( pass )
 
-	UI2D.Begin( "first", 300, 300 )
+	UI2D.Begin( "Χρόνος", 300, 300 )
 	if UI2D.Button( "first button" ) then
 		print( "from 1st button" )
 	end
@@ -47,7 +47,7 @@ function lovr.draw( pass )
 	released, sl2 = UI2D.SliderInt( "hello", sl2, 0, 100 )
 	UI2D.End( pass )
 
-	UI2D.Begin( "time", 150, 100 )
+	UI2D.Begin( "abcdefghij123", 150, 100 )
 	UI2D.Button( txt )
 	UI2D.End( pass )
 
@@ -56,6 +56,6 @@ function lovr.draw( pass )
 	pass:setColor( 1, 0, 0 )
 	pass:plane( 100, 100, 0, 100, 100 )
 	table.insert( ui_passes, pass )
-	print( #ui_passes )
+	-- print( #ui_passes )
 	return lovr.graphics.submit( ui_passes )
 end

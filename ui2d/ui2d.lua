@@ -1,3 +1,4 @@
+local utf8 = require "utf8"
 local UI2D = {}
 
 local e_mouse_state = { clicked = 1, held = 2, released = 3, idle = 4 }
@@ -337,8 +338,16 @@ function UI2D.End( main_pass )
 	table.insert( windows[ begin_idx ].command_list,
 		{ type = "rect_fill", bbox = { x = 0, y = 0, w = cur_window.w, h = (2 * margin) + font.h }, color = title_col } )
 
+	local txt = cur_window.title
+	local title_w = utf8.len( txt ) * font.w
+	if title_w > cur_window.w - (2 * margin) then -- Truncate title
+		local num_chars = ((cur_window.w - (2 * margin)) / font.w) - 3
+		txt = string.sub( txt, 1, num_chars ) .. "..."
+		title_w = utf8.len( txt ) * font.w
+	end
+
 	table.insert( windows[ begin_idx ].command_list,
-		{ type = "text", text = cur_window.title, bbox = { x = 0, y = 0, w = cur_window.w, h = (2 * margin) + font.h }, color = colors.text } )
+		{ type = "text", text = txt, bbox = { x = margin, y = 0, w = title_w, h = (2 * margin) + font.h }, color = colors.text } )
 
 	table.insert( windows[ begin_idx ].command_list,
 		{ type = "rect_wire", bbox = { x = 0, y = 0, w = cur_window.w, h = cur_window.h }, color = colors.window_border } )
