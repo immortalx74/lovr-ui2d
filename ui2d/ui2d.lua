@@ -202,6 +202,7 @@ function UI2D.Init( size )
 end
 
 function UI2D.InputInfo()
+	-- Get mouse
 	if lovr.system.isMouseDown( 1 ) then
 		if mouse.prev_frame == 0 then
 			mouse.prev_frame = 1
@@ -223,13 +224,15 @@ function UI2D.InputInfo()
 
 	mouse.x, mouse.y = lovr.system.getMousePosition()
 
+	-- Set active window on click
 	local hovers_active = false
+	local hovers_any = false
 	for i, v in ipairs( windows ) do
 		if PointInRect( mouse.x, mouse.y, v.x, v.y, v.w, v.h ) then
 			if v == active_window then
 				hovers_active = true
-				break
 			end
+			hovers_any = true
 		end
 	end
 
@@ -241,6 +244,12 @@ function UI2D.InputInfo()
 		end
 	end
 
+	-- Set active to none
+	if not hovers_any and mouse.state == e_mouse_state.clicked then
+		active_window = nil
+	end
+
+	-- Handle window dragging
 	if active_window then
 		local v = active_window
 		if PointInRect( mouse.x, mouse.y, v.x, v.y, v.w, (2 * margin) + font.h ) and mouse.state == e_mouse_state.clicked then
