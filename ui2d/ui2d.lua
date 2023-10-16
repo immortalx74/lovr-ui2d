@@ -203,6 +203,8 @@ local function Slider( type, name, v, v_min, v_max, width )
 	local bbox = {}
 	if layout.same_line then
 		bbox = { x = layout.x + layout.w + margin, y = layout.y, w = slider_w + margin + text_w, h = (2 * margin) + font.h }
+	elseif layout.same_column then
+		bbox = { x = layout.x, y = layout.y + layout.h + margin, w = slider_w + margin + text_w, h = (2 * margin) + font.h }
 	else
 		bbox = { x = margin, y = layout.y + layout.row_h + margin, w = slider_w + margin + text_w, h = (2 * margin) + font.h }
 	end
@@ -484,11 +486,15 @@ function UI2D.SameLine()
 	layout.same_line = true
 end
 
+function UI2D.SameColumn()
+	layout.same_column = true
+end
+
 function UI2D.Button( name, width, height )
 	local text = GetLabelPart( name )
 	local cur_window = windows[ begin_idx ]
-	local text_w = font.handle:getWidth( text )
-	local num_lines = GetLineCount( text )
+	local text_w = utf8.len( name ) * font.w
+	local num_lines = GetLineCount( name )
 
 	local bbox = {}
 	if layout.same_line then
@@ -537,6 +543,36 @@ end
 
 function UI2D.SliderFloat( name, v, v_min, v_max, width, num_decimals )
 	return Slider( e_slider_type.float, name, v, v_min, v_max, width, num_decimals )
+end
+
+function UI2D.ProgressBar( progress, width )
+	if width and width >= (2 * margin) + (4 * font.w) then
+		width = width
+	else
+		width = 300
+	end
+
+	local bbox = {}
+	if layout.same_line then
+		bbox = { x = layout.x + layout.w + margin, y = layout.y, w = width, h = (2 * margin) + font.h }
+	elseif layout.same_column then
+		bbox = { x = layout.x, y = layout.y + layout.h, w = width, h = (2 * margin) + font.h }
+	else
+		bbox = { x = margin, y = layout.y + layout.row_h + margin, w = width, h = (2 * margin) + font.h }
+	end
+
+	UpdateLayout( bbox )
+
+	progress = Clamp( progress, 0, 100 )
+	local fill_w = math.floor( (width * progress) / 100 )
+	local str = progress .. "%"
+
+	table.insert( windows[ begin_idx ].command_list,
+		{ type = "rect_fill", bbox = { x = bbox.x, y = bbox.y, w = fill_w, h = bbox.h }, color = colors.progress_bar_fill } )
+	table.insert( windows[ begin_idx ].command_list,
+		{ type = "rect_fill", bbox = { x = bbox.x + fill_w, y = bbox.y, w = bbox.w - fill_w, h = bbox.h }, color = colors.progress_bar_bg } )
+	table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = bbox, color = colors.progress_bar_border } )
+	table.insert( windows[ begin_idx ].command_list, { type = "text", text = str, bbox = bbox, color = colors.text } )
 end
 
 function UI2D.NewFrame( main_pass )

@@ -33,12 +33,13 @@ function lovr.draw( pass )
 	UI2D.End( pass )
 
 	UI2D.Begin( "second", 400, 200 )
+	UI2D.ProgressBar( 20 )
 	UI2D.Button( "first button2" )
-	UI2D.Button( "second button2" )
 	released, sl1 = UI2D.SliderInt( "a slider", sl1, 0, 100 )
 	if released then
 		print( released, sl1 )
 	end
+	UI2D.Button( "second button2" )
 	UI2D.End( pass )
 
 	UI2D.Begin( "third", 350, 240 )
