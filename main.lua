@@ -5,6 +5,7 @@ local win1_pos_x = 300
 local win1_pos_y = 300
 local sl1 = 20
 local sl2 = 10
+local sl3 = 10.3
 local txt = "sample text"
 
 function lovr.load()
@@ -24,7 +25,7 @@ function lovr.draw( pass )
 	pass:setProjection( 1, mat4():orthographic( pass:getDimensions() ) )
 	UI2D.NewFrame( pass )
 
-	UI2D.Begin( "Χρόνος", 300, 300 )
+	UI2D.Begin( "first", 300, 300 )
 	if UI2D.Button( "first button" ) then
 		print( "from 1st button" )
 	end
@@ -40,15 +41,16 @@ function lovr.draw( pass )
 	end
 	UI2D.End( pass )
 
-	UI2D.Begin( "third##blah", 350, 240 )
+	UI2D.Begin( "third", 350, 240 )
 	UI2D.Button( "blah1" )
 	UI2D.Button( "blah2" )
 	UI2D.SameLine()
 	released, sl2 = UI2D.SliderInt( "hello", sl2, 0, 100 )
 	UI2D.End( pass )
 
-	UI2D.Begin( "abcdefghij123", 150, 100 )
+	UI2D.Begin( "fourth", 250, 250 )
 	UI2D.Button( txt )
+	released, sl3 = UI2D.SliderFloat( "hello", sl3, 0, 100, 300 )
 	UI2D.End( pass )
 
 	local ui_passes = UI2D.RenderFrame( pass )

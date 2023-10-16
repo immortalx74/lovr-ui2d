@@ -2,23 +2,22 @@ local utf8 = require "utf8"
 local UI2D = {}
 
 local e_mouse_state = { clicked = 1, held = 2, released = 3, idle = 4 }
+local e_slider_type = { int = 1, float = 2 }
 local modal_window = nil
 local active_window = nil
 local active_widget = nil
 local dragged_window = nil
-local dragged_window_offset = { x = 0, y = 0 }
 local begin_idx = nil
 local margin = 8
-
 local separator_thickness = 4
-local font = { handle = nil, w = nil, h = nil }
 local windows = {}
 local color_themes = {}
+local font = { handle = nil, w = nil, h = nil }
+local dragged_window_offset = { x = 0, y = 0 }
 local mouse = { x = 0, y = 0, state = e_mouse_state.idle, prev_frame = 0, this_frame = 0 }
 local texture_flags = { mipmaps = true, usage = { 'sample', 'render', 'transfer' } }
 local layout = { x = 0, y = 0, w = 0, h = 0, row_h = 0, total_w = 0, total_h = 0, same_line = false, same_column = false }
 local clamp_sampler = lovr.graphics.newSampler( { wrap = 'clamp' } )
-local e_slider_type = { int = 1, float = 2 }
 
 color_themes.dark =
 {
@@ -208,7 +207,7 @@ local function Slider( type, name, v, v_min, v_max, width )
 		bbox = { x = margin, y = layout.y + layout.row_h + margin, w = slider_w + margin + text_w, h = (2 * margin) + font.h }
 	end
 
-	if width  and width > bbox.w then
+	if width and width > bbox.w then
 		bbox.w = width
 		slider_w = width - margin - text_w
 	end
@@ -230,8 +229,12 @@ local function Slider( type, name, v, v_min, v_max, width )
 
 	if mouse.state == e_mouse_state.held and active_widget == cur_window.id .. name and cur_window == active_window then
 		v = MapRange( bbox.x + 2, bbox.x + slider_w - 2, v_min, v_max, mouse.x - cur_window.x )
-		v = Clamp( math.ceil( v ), v_min, v_max )
-		if v == 0 then v = 0 end
+		if type == e_slider_type.float then
+			v = Clamp( v, v_min, v_max )
+		else
+			v = Clamp( math.ceil( v ), v_min, v_max )
+			if v == 0 then v = 0 end
+		end
 	end
 	if mouse.state == e_mouse_state.released and active_widget == cur_window.id .. name then
 		active_widget = nil
@@ -245,10 +248,18 @@ local function Slider( type, name, v, v_min, v_max, width )
 	local thumb_pos = MapRange( v_min, v_max, bbox.x, bbox.x + slider_w - font.h, v )
 	local thumb_rect = { x = thumb_pos, y = bbox.y + (bbox.h / 2) - (font.h / 2), w = font.h, h = font.h }
 
+	local value
+	if type == e_slider_type.float then
+		num_decimals = num_decimals or 2
+		local str_fmt = "%." .. num_decimals .. "f"
+		value = string.format( str_fmt, v )
+	else
+		value = v
+	end
 	table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = slider_rect, color = col } )
 	table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = thumb_rect, color = colors.slider_thumb } )
 	table.insert( windows[ begin_idx ].command_list, { type = "text", text = text, bbox = text_label_rect, color = colors.text } )
-	table.insert( windows[ begin_idx ].command_list, { type = "text", text = v, bbox = text_value_rect, color = colors.text } )
+	table.insert( windows[ begin_idx ].command_list, { type = "text", text = value, bbox = text_value_rect, color = colors.text } )
 	return result, v
 end
 
@@ -519,63 +530,6 @@ function UI2D.Button( name, width, height )
 
 	return result
 end
-
--- function UI2D.SliderInt( name, v, v_min, v_max, width )
--- 	local text = GetLabelPart( name )
--- 	local cur_window = windows[ begin_idx ]
--- 	local text_w = font.handle:getWidth( text )
-
--- 	local slider_w = 10 * font.w
--- 	local bbox = {}
--- 	if layout.same_line then
--- 		bbox = { x = layout.x + layout.w + margin, y = layout.y, w = slider_w + margin + text_w, h = (2 * margin) + font.h }
--- 	else
--- 		bbox = { x = margin, y = layout.y + layout.row_h + margin, w = slider_w + margin + text_w, h = (2 * margin) + font.h }
--- 	end
-
--- 	if width and type( width ) == "number" and width > bbox.w then
--- 		bbox.w = width
--- 		slider_w = width - margin - text_w
--- 	end
-
--- 	UpdateLayout( bbox )
-
--- 	local col = colors.slider_bg
--- 	local result = false
-
--- 	if not modal_window or (modal_window and modal_window == cur_window.id) then
--- 		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, slider_w, bbox.h ) and cur_window == active_window then
--- 			col = colors.slider_bg_hover
-
--- 			if mouse.state == e_mouse_state.clicked then
--- 				active_widget = cur_window.id .. name
--- 			end
--- 		end
--- 	end
-
--- 	if mouse.state == e_mouse_state.held and active_widget == cur_window.id .. name and cur_window == active_window then
--- 		v = MapRange( bbox.x + 2, bbox.x + slider_w - 2, v_min, v_max, mouse.x - cur_window.x )
--- 		v = Clamp( math.ceil( v ), v_min, v_max )
--- 		if v == 0 then v = 0 end
--- 	end
--- 	if mouse.state == e_mouse_state.released and active_widget == cur_window.id .. name then
--- 		active_widget = nil
--- 		result = true
--- 	end
-
--- 	local value_text_w = font.handle:getWidth( v )
--- 	local text_label_rect = { x = bbox.x + slider_w + margin, y = bbox.y, w = text_w, h = bbox.h }
--- 	local text_value_rect = { x = bbox.x, y = bbox.y, w = slider_w, h = bbox.h }
--- 	local slider_rect = { x = bbox.x, y = bbox.y + (bbox.h / 2) - (font.h / 2), w = slider_w, h = font.h }
--- 	local thumb_pos = MapRange( v_min, v_max, bbox.x, bbox.x + slider_w - font.h, v )
--- 	local thumb_rect = { x = thumb_pos, y = bbox.y + (bbox.h / 2) - (font.h / 2), w = font.h, h = font.h }
-
--- 	table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = slider_rect, color = col } )
--- 	table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = thumb_rect, color = colors.slider_thumb } )
--- 	table.insert( windows[ begin_idx ].command_list, { type = "text", text = text, bbox = text_label_rect, color = colors.text } )
--- 	table.insert( windows[ begin_idx ].command_list, { type = "text", text = v, bbox = text_value_rect, color = colors.text } )
--- 	return result, v
--- end
 
 function UI2D.SliderInt( name, v, v_min, v_max, width )
 	return Slider( e_slider_type.int, name, v, v_min, v_max, width )
