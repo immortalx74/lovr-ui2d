@@ -7,6 +7,7 @@ local sl1 = 20
 local sl2 = 10
 local sl3 = 10.3
 local txt = "sample text"
+local icon = lovr.graphics.newTexture( "ui2d/lovrlogo.png" )
 
 function lovr.load()
 	UI2D.Init( 16 )
@@ -29,11 +30,16 @@ function lovr.draw( pass )
 	if UI2D.Button( "first button" ) then
 		print( "from 1st button" )
 	end
+	if UI2D.ImageButton( icon, 40, 40 ) then
+		print( "img" )
+	end
 	UI2D.Button( "second button" )
 	UI2D.End( pass )
 
 	UI2D.Begin( "second", 400, 200 )
 	UI2D.ProgressBar( 20 )
+	UI2D.Separator()
+	UI2D.Button( "first button2" )
 	UI2D.Button( "first button2" )
 	released, sl1 = UI2D.SliderInt( "a slider", sl1, 0, 100 )
 	if released then

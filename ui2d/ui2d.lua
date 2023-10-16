@@ -9,7 +9,7 @@ local active_widget = nil
 local dragged_window = nil
 local begin_idx = nil
 local margin = 8
-local separator_thickness = 4
+local separator_thickness = 2
 local windows = {}
 local color_themes = {}
 local font = { handle = nil, w = nil, h = nil }
@@ -428,8 +428,7 @@ function UI2D.End( main_pass )
 		if v.type == "rect_fill" then
 			if v.is_separator then
 				cur_window.pass:setColor( v.color )
-				local m = lovr.math.newMat4( vec3( v.bbox.x + (cur_window.w / 2), v.bbox.y, 0 ), vec3( cur_window.w - (2 * margin), separator_thickness, 0 ) )
-				cur_window.pass:plane( m, "fill" )
+				cur_window.pass:plane( v.bbox.x + (cur_window.w / 2), v.bbox.y, 0, cur_window.w - (2 * margin), separator_thickness, 0, 0, 0, 0, "fill" )
 			else
 				cur_window.pass:setColor( v.color )
 				cur_window.pass:plane( v.bbox.x + (v.bbox.w / 2), v.bbox.y + (v.bbox.h / 2), 0, v.bbox.w, v.bbox.h, 0, 0, 0, 0, "fill" )
@@ -521,7 +520,6 @@ function UI2D.Button( name, width, height )
 		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) and cur_window == active_window then
 			col = colors.button_bg_hover
 			if mouse.state == e_mouse_state.clicked then
-				active_widget = cur_window.id .. name
 				result = true
 			end
 			if mouse.state == e_mouse_state.held then
@@ -573,6 +571,73 @@ function UI2D.ProgressBar( progress, width )
 		{ type = "rect_fill", bbox = { x = bbox.x + fill_w, y = bbox.y, w = bbox.w - fill_w, h = bbox.h }, color = colors.progress_bar_bg } )
 	table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = bbox, color = colors.progress_bar_border } )
 	table.insert( windows[ begin_idx ].command_list, { type = "text", text = str, bbox = bbox, color = colors.text } )
+end
+
+function UI2D.Separator()
+	local bbox = {}
+	if layout.same_line then
+		return
+	else
+		bbox = { x = 0, y = layout.y + layout.row_h + margin, w = 0, h = 0 }
+	end
+
+	UpdateLayout( bbox )
+
+	table.insert( windows[ begin_idx ].command_list, { is_separator = true, type = "rect_fill", bbox = bbox, color = colors.separator } )
+end
+
+function UI2D.ImageButton( texture, width, height, text )
+	local cur_window = windows[ begin_idx ]
+	local width = width or texture:getWidth()
+	local height = height or texture:getHeight()
+
+	local bbox = {}
+	if layout.same_line then
+		bbox = { x = layout.x + layout.w + margin, y = layout.y, w = width, h = height }
+	else
+		bbox = { x = margin, y = layout.y + layout.row_h + margin, w = width, h = height }
+	end
+
+	local text_w
+
+	if text then
+		text_w = font.handle:getWidth( text )
+		font.h = font.handle:getHeight()
+
+		if font.h > bbox.h then
+			bbox.h = font.h
+		end
+		bbox.w = bbox.w + (2 * margin) + text_w
+	end
+
+	UpdateLayout( bbox )
+
+	local result = false
+	local col = 1
+
+	if not modal_window or (modal_window and modal_window == cur_window.id) then
+		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) and cur_window == active_window then
+			table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = bbox, color = colors.image_button_border_highlight } )
+			
+			if mouse.state == e_mouse_state.clicked then
+				result = true
+			end
+			if mouse.state == e_mouse_state.held then
+				col = 0.7
+			end
+		end
+	end
+
+	if text then
+		table.insert( windows[ begin_idx ].command_list,
+			{ type = "image", bbox = { x = bbox.x, y = bbox.y + ((bbox.h - height) / 2), w = width, h = height }, texture = texture, color = { col, col, col } } )
+		table.insert( windows[ begin_idx ].command_list,
+			{ type = "text", text = text, bbox = { x = bbox.x + width, y = bbox.y, w = text_w + (2 * margin), h = bbox.h }, color = colors.text } )
+	else
+		table.insert( windows[ begin_idx ].command_list, { type = "image", bbox = bbox, texture = texture, color = { col, col, col } } )
+	end
+
+	return result
 end
 
 function UI2D.NewFrame( main_pass )
