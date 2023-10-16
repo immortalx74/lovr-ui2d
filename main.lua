@@ -8,7 +8,7 @@ local sl2 = 10
 local txt = "sample text"
 
 function lovr.load()
-	UI2D.Init(16)
+	UI2D.Init( 16 )
 end
 
 function lovr.update( dt )
