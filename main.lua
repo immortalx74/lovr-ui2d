@@ -9,6 +9,9 @@ local sl3 = 10.3
 local txt = "sample text"
 local icon = lovr.graphics.newTexture( "ui2d/lovrlogo.png" )
 local tab_bar_idx = 1
+local check1 = true
+local check2 = false
+local rb_idx = 1
 
 function lovr.load()
 	UI2D.Init( 16 )
@@ -34,6 +37,15 @@ function lovr.draw( pass )
 	if UI2D.ImageButton( icon, 40, 40 ) then
 		print( "img" )
 	end
+	if UI2D.RadioButton( "Radio1", rb_idx == 1 ) then
+		rb_idx = 1
+	end
+	if UI2D.RadioButton( "Radio2", rb_idx == 2 ) then
+		rb_idx = 2
+	end
+	if UI2D.RadioButton( "Radio3", rb_idx == 3 ) then
+		rb_idx = 3
+	end
 	UI2D.Button( "second button" )
 	UI2D.End( pass )
 
@@ -58,6 +70,12 @@ function lovr.draw( pass )
 
 	UI2D.Begin( "fourth", 250, 250 )
 	UI2D.Button( txt )
+	if UI2D.CheckBox( "Really?", check1 ) then
+		check1 = not check1
+	end
+	if UI2D.CheckBox( "Another check", check2 ) then
+		check2 = not check2
+	end
 	released, sl3 = UI2D.SliderFloat( "hello", sl3, 0, 100, 300 )
 	UI2D.End( pass )
 

@@ -728,6 +728,81 @@ function UI2D.Label( text, compact )
 	table.insert( windows[ begin_idx ].command_list, { type = "text", text = text, bbox = bbox, color = colors.text } )
 end
 
+function UI2D.CheckBox( text, checked )
+	local cur_window = windows[ begin_idx ]
+	local text_w = font.handle:getWidth( text )
+
+	local bbox = {}
+	if layout.same_line then
+		bbox = { x = layout.x + layout.w + margin, y = layout.y, w = font.h + margin + text_w, h = (2 * margin) + font.h }
+	else
+		bbox = { x = margin, y = layout.y + layout.row_h + margin, w = font.h + margin + text_w, h = (2 * margin) + font.h }
+	end
+
+	UpdateLayout( bbox )
+
+	local result = false
+	local col = colors.check_border
+
+	if not modal_window or (modal_window and modal_window == cur_window.id) then
+		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) and cur_window == active_window then
+			col = colors.check_border_hover
+			if mouse.state == e_mouse_state.clicked then
+				result = true
+			end
+		end
+	end
+
+	local check_rect = { x = bbox.x, y = bbox.y + margin, w = font.h, h = font.h }
+	local text_rect = { x = bbox.x + font.h + margin, y = bbox.y, w = text_w + margin, h = bbox.h }
+	table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = check_rect, color = col } )
+	table.insert( windows[ begin_idx ].command_list, { type = "text", text = text, bbox = text_rect, color = colors.text } )
+
+	if checked and type( checked ) == "boolean" then
+		table.insert( windows[ begin_idx ].command_list, { type = "text", text = "✔", bbox = check_rect, color = colors.check_mark } )
+	end
+
+	return result
+end
+
+function UI2D.RadioButton( text, checked )
+	local cur_window = windows[ begin_idx ]
+	local text_w = font.handle:getWidth( text )
+
+	local bbox = {}
+	if layout.same_line then
+		bbox = { x = layout.x + layout.w + margin, y = layout.y, w = font.h + margin + text_w, h = (2 * margin) + font.h }
+	else
+		bbox = { x = margin, y = layout.y + layout.row_h + margin, w = font.h + margin + text_w, h = (2 * margin) + font.h }
+	end
+
+	UpdateLayout( bbox )
+
+	local result = false
+	local col = colors.radio_border
+
+	if not modal_window or (modal_window and modal_window == cur_window.id) then
+		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) and cur_window == active_window then
+			col = colors.radio_border_hover
+
+			if mouse.state == e_mouse_state.clicked then
+				result = true
+			end
+		end
+	end
+
+	local check_rect = { x = bbox.x, y = bbox.y + margin, w = font.h, h = font.h }
+	local text_rect = { x = bbox.x + font.h + margin, y = bbox.y, w = text_w + margin, h = bbox.h }
+	table.insert( windows[ begin_idx ].command_list, { type = "circle_wire", bbox = check_rect, color = col } )
+	table.insert( windows[ begin_idx ].command_list, { type = "text", text = text, bbox = text_rect, color = colors.text } )
+
+	if checked and type( checked ) == "boolean" then
+		table.insert( windows[ begin_idx ].command_list, { type = "circle_fill", bbox = check_rect, color = colors.radio_mark } )
+	end
+
+	return result
+end
+
 function UI2D.NewFrame( main_pass )
 	font.handle:setPixelDensity( 1.0 )
 end
