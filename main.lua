@@ -8,6 +8,7 @@ local sl2 = 10
 local sl3 = 10.3
 local txt = "sample text"
 local icon = lovr.graphics.newTexture( "ui2d/lovrlogo.png" )
+local tab_bar_idx = 1
 
 function lovr.load()
 	UI2D.Init( 16 )
@@ -58,6 +59,26 @@ function lovr.draw( pass )
 	UI2D.Begin( "fourth", 250, 250 )
 	UI2D.Button( txt )
 	released, sl3 = UI2D.SliderFloat( "hello", sl3, 0, 100, 300 )
+	UI2D.End( pass )
+
+	UI2D.Begin( "TabBar window", 350, 100 )
+	local was_clicked, idx = UI2D.TabBar( "my tab bar", { "first", "second", "third" }, tab_bar_idx )
+	if was_clicked then
+		tab_bar_idx = idx
+	end
+	if tab_bar_idx == 1 then
+		UI2D.Button( "Button on 1st tab" )
+		UI2D.Label( "Label on 1st tab" )
+		UI2D.Label( "LÖVR..." )
+	elseif tab_bar_idx == 2 then
+		UI2D.Button( "Button on 2nd tab" )
+		UI2D.Label( "Label on 2nd tab" )
+		UI2D.Label( "is..." )
+	elseif tab_bar_idx == 3 then
+		UI2D.Button( "Button on 3rd tab" )
+		UI2D.Label( "Label on 3rd tab" )
+		UI2D.Label( "awesome!" )
+	end
 	UI2D.End( pass )
 
 	local ui_passes = UI2D.RenderFrame( pass )

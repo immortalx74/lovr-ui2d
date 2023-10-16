@@ -377,6 +377,7 @@ function UI2D.End( main_pass )
 	local cur_window = windows[ begin_idx ]
 	cur_window.w = layout.total_w
 	cur_window.h = layout.total_h
+	assert( cur_window.w > 0, "Begin/End block without widgets!" )
 
 	-- Cache texture
 	if cur_window.texture then
@@ -575,7 +576,7 @@ end
 
 function UI2D.Separator()
 	local bbox = {}
-	if layout.same_line then
+	if layout.same_line or layout.same_column then
 		return
 	else
 		bbox = { x = 0, y = layout.y + layout.row_h + margin, w = 0, h = 0 }
@@ -594,6 +595,8 @@ function UI2D.ImageButton( texture, width, height, text )
 	local bbox = {}
 	if layout.same_line then
 		bbox = { x = layout.x + layout.w + margin, y = layout.y, w = width, h = height }
+	elseif layout.same_column then
+		bbox = { x = layout.x, y = layout.y + layout.h + margin, w = width, height = height }
 	else
 		bbox = { x = margin, y = layout.y + layout.row_h + margin, w = width, h = height }
 	end
@@ -618,7 +621,7 @@ function UI2D.ImageButton( texture, width, height, text )
 	if not modal_window or (modal_window and modal_window == cur_window.id) then
 		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) and cur_window == active_window then
 			table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = bbox, color = colors.image_button_border_highlight } )
-			
+
 			if mouse.state == e_mouse_state.clicked then
 				result = true
 			end
@@ -638,6 +641,91 @@ function UI2D.ImageButton( texture, width, height, text )
 	end
 
 	return result
+end
+
+function UI2D.Dummy( width, height )
+	local bbox = {}
+	if layout.same_line then
+		bbox = { x = layout.x + layout.w + margin, y = layout.y, w = width, h = height }
+	else
+		bbox = { x = margin, y = layout.y + layout.row_h + margin, w = width, h = height }
+	end
+
+	UpdateLayout( bbox )
+end
+
+function UI2D.TabBar( name, tabs, idx )
+	local cur_window = windows[ begin_idx ]
+
+	local bbox = {}
+
+	if layout.same_line then
+		bbox = { x = layout.x + layout.w + margin, y = layout.y, w = 0, h = (2 * margin) + font.h }
+	else
+		bbox = { x = margin, y = layout.y + layout.row_h + margin, w = 0, h = (2 * margin) + font.h }
+	end
+
+	local result = false, idx
+	local total_w = 0
+	local col = colors.tab_bar_bg
+	local x_off = bbox.x
+
+	for i, v in ipairs( tabs ) do
+		local text_w = font.handle:getWidth( v )
+		local tab_w = text_w + (2 * margin)
+		bbox.w = bbox.w + tab_w
+
+		if not modal_window or (modal_window and modal_window == cur_window.id) then
+			if PointInRect( mouse.x, mouse.y, x_off + cur_window.x, bbox.y + cur_window.y, tab_w, bbox.h ) and cur_window == active_window then
+				col = colors.tab_bar_hover
+				if mouse.state == e_mouse_state.clicked then
+					idx = i
+					result = true
+				end
+			else
+				col = colors.tab_bar_bg
+			end
+		end
+
+		local tab_rect = { x = x_off, y = bbox.y, w = tab_w, h = bbox.h }
+		table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = tab_rect, color = col } )
+		table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = tab_rect, color = colors.tab_bar_border } )
+		table.insert( windows[ begin_idx ].command_list, { type = "text", text = v, bbox = tab_rect, color = colors.text } )
+
+		if idx == i then
+			table.insert( windows[ begin_idx ].command_list,
+				{ type = "rect_fill", bbox = { x = tab_rect.x + 2, y = tab_rect.y + tab_rect.h - 6, w = tab_rect.w - 4, h = 5 }, color = colors.tab_bar_highlight } )
+		end
+		x_off = x_off + tab_w
+	end
+
+	table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = bbox, color = colors.tab_bar_border } )
+	UpdateLayout( bbox )
+
+	return result, idx
+end
+
+function UI2D.Label( text, compact )
+	local text_w = font.handle:getWidth( text )
+	local num_lines = GetLineCount( text )
+
+	local mrg = (2 * margin)
+	if compact then
+		mrg = 0
+	end
+
+	local bbox = {}
+	if layout.same_line then
+		bbox = { x = layout.x + layout.w + margin, y = layout.y, w = text_w, h = mrg + (num_lines * font.h) }
+	elseif layout.same_column then
+		bbox = { x = layout.x, y = layout.y + layout.h + margin, w = text_w, h = mrg + (num_lines * font.h) }
+	else
+		bbox = { x = margin, y = layout.y + layout.row_h + margin, w = text_w, h = mrg + (num_lines * font.h) }
+	end
+
+	UpdateLayout( bbox )
+
+	table.insert( windows[ begin_idx ].command_list, { type = "text", text = text, bbox = bbox, color = colors.text } )
 end
 
 function UI2D.NewFrame( main_pass )
