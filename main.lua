@@ -12,6 +12,8 @@ local tab_bar_idx = 1
 local check1 = true
 local check2 = false
 local rb_idx = 1
+local txt1 = "Αυτό είναι utf8 κείμενο"
+-- local txt1 = "here we are now hello"
 
 function lovr.load()
 	UI2D.Init( 16 )
@@ -70,6 +72,8 @@ function lovr.draw( pass )
 
 	UI2D.Begin( "fourth", 250, 250 )
 	UI2D.Button( txt )
+	UI2D.SameLine()
+	txt1 = UI2D.TextBox( "textbox1", 11, txt1 )
 	if UI2D.CheckBox( "Really?", check1 ) then
 		check1 = not check1
 	end

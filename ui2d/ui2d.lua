@@ -6,6 +6,7 @@ local e_slider_type = { int = 1, float = 2 }
 local modal_window = nil
 local active_window = nil
 local active_widget = nil
+local active_textbox = nil
 local dragged_window = nil
 local begin_idx = nil
 local margin = 8
@@ -104,7 +105,6 @@ color_themes.light =
 }
 
 local colors = color_themes.dark
-
 
 local function Clamp( n, n_min, n_max )
 	if n < n_min then
@@ -265,6 +265,16 @@ local function Slider( type, name, v, v_min, v_max, width )
 	return result, v
 end
 
+function utf8.sub( s, i, j )
+	i = utf8.offset( s, i )
+	j = utf8.offset( s, j + 1 ) - 1
+	return string.sub( s, i, j )
+end
+
+function lovr.textinput( text, code )
+	--
+end
+
 ---------------------------------------------------------------
 function UI2D.Init( size )
 	font.handle = lovr.graphics.newFont( "ui2d/" .. "DejaVuSansMono.ttf", size or 14, 4 )
@@ -340,6 +350,14 @@ function UI2D.InputInfo()
 
 	if mouse.state == e_mouse_state.released then
 		dragged_window = nil
+	end
+
+	-- Unfocus textbox
+	if mouse.state == e_mouse_state.clicked then
+		if not active_textbox then
+			active_widget = nil
+			active_textbox = nil
+		end
 	end
 end
 
@@ -801,6 +819,88 @@ function UI2D.RadioButton( text, checked )
 	end
 
 	return result
+end
+
+function UI2D.TextBox( name, num_visible_chars, text )
+	local cur_window = windows[ begin_idx ]
+	local label_w = font.handle:getWidth( name )
+
+	local bbox = {}
+	if layout.same_line then
+		bbox = { x = layout.x + layout.w + margin, y = layout.y, w = (4 * margin) + (num_visible_chars * font.w) + label_w, h = (2 * margin) + font.h }
+	else
+		bbox = { x = margin, y = layout.y + layout.row_h + margin, w = (4 * margin) + (num_visible_chars * font.w) + label_w, h = (2 * margin) + font.h }
+	end
+
+	UpdateLayout( bbox )
+
+	local col1 = colors.textbox_bg
+	local col2 = colors.textbox_border
+
+	local text_rect = { x = bbox.x, y = bbox.y, w = (2 * margin) + (num_visible_chars * font.w), h = bbox.h }
+	if not modal_window or (modal_window and modal_window == cur_window.id) then
+		if PointInRect( mouse.x, mouse.y, text_rect.x + cur_window.x, text_rect.y + cur_window.y, text_rect.w, text_rect.h ) and cur_window == active_window then
+			col1 = colors.textbox_bg_hover
+
+			if mouse.state == e_mouse_state.clicked then
+				local pos = math.floor( (mouse.x - cur_window.x - text_rect.x) / font.w )
+
+				if active_widget ~= cur_window.id .. name then
+					active_textbox = { caret = pos }
+					active_textbox.scroll = 0
+					active_widget = cur_window.id .. name
+				else
+					active_textbox.caret = pos
+				end
+			end
+		end
+	end
+
+	local scroll = 0
+	if active_textbox then
+		scroll = active_textbox.scroll
+	end
+
+	local visible_text = utf8.sub( text, scroll + 1, scroll + num_visible_chars )
+	local label_rect = { x = text_rect.x + text_rect.w + margin, y = bbox.y, w = label_w, h = bbox.h }
+	local char_rect = { x = text_rect.x + margin, y = text_rect.y, w = (utf8.len( visible_text ) * font.w), h = text_rect.h }
+
+
+	-- Caret
+	local caret_rect = nil
+	if active_widget == cur_window.id .. name then
+		if lovr.system.wasKeyPressed( "left" ) then
+			if active_textbox.caret == 0 then
+				if active_textbox.scroll > 0 then
+					active_textbox.scroll = active_textbox.scroll - 1
+				end
+			end
+			active_textbox.caret = active_textbox.caret - 1
+		end
+
+		if lovr.system.wasKeyPressed( "right" ) then
+			local full_length = utf8.len( text )
+			local visible_length = utf8.len( visible_text )
+			if active_textbox.caret == num_visible_chars and full_length > num_visible_chars and active_textbox.scroll < (full_length - visible_length) then
+				active_textbox.scroll = active_textbox.scroll + 1
+			end
+			active_textbox.caret = active_textbox.caret + 1
+		end
+
+		active_textbox.caret = Clamp( active_textbox.caret, 0, utf8.len( visible_text ) )
+		caret_rect = { x = char_rect.x + (active_textbox.caret * font.w), y = char_rect.y + margin, w = 2, h = font.h }
+	end
+
+	table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = text_rect, color = col1 } )
+	table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = text_rect, color = col2 } )
+	table.insert( windows[ begin_idx ].command_list, { type = "text", text = visible_text, bbox = char_rect, color = colors.text } )
+	table.insert( windows[ begin_idx ].command_list, { type = "text", text = name, bbox = label_rect, color = colors.text } )
+
+	if caret_rect then
+		table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = caret_rect, color = colors.text } )
+	end
+
+	return text
 end
 
 function UI2D.NewFrame( main_pass )
