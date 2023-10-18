@@ -928,7 +928,8 @@ function UI2D.TextBox( name, num_visible_chars, text )
 				text = part1 .. part2
 
 				local max_scroll = utf8.len( text ) - num_visible_chars
-				if active_textbox.scroll < max_scroll or utf8.len( text ) <= num_visible_chars then
+				-- if active_textbox.scroll < max_scroll or utf8.len( text ) <= num_visible_chars then
+				if active_textbox.scroll < max_scroll or utf8.len( text ) < num_visible_chars then
 					active_textbox.caret = active_textbox.caret - 1
 				end
 				-- if active_textbox.scroll <= 0 then
@@ -960,13 +961,11 @@ function UI2D.TextBox( name, num_visible_chars, text )
 			end
 		end
 
-
-
-		active_textbox.scroll = Clamp( active_textbox.scroll, 0, utf8.len( text ) - num_visible_chars )
+		local max_scroll = utf8.len( text ) - num_visible_chars
+		if max_scroll < 0 then max_scroll = 0 end
+		active_textbox.scroll = Clamp( active_textbox.scroll, 0, max_scroll )
 		scroll = active_textbox.scroll
-
 		active_textbox.caret = Clamp( active_textbox.caret, 0, num_visible_chars )
-
 		caret_rect = { x = char_rect.x + (active_textbox.caret * font.w), y = char_rect.y + margin, w = 2, h = font.h }
 	end
 
