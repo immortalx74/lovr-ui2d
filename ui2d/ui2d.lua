@@ -276,7 +276,6 @@ end
 
 function lovr.textinput( text, code )
 	text_input_character = text
-	-- print( "here")
 end
 
 function lovr.keypressed( key, scancode, repeating )
@@ -287,6 +286,8 @@ function lovr.keypressed( key, scancode, repeating )
 			repeating_key = "left"
 		elseif key == "backspace" then
 			repeating_key = "backspace"
+		elseif key == "delete" then
+			repeating_key = "delete"
 		end
 	end
 end
@@ -906,7 +907,7 @@ function UI2D.TextBox( name, num_visible_chars, text )
 	local label_rect = { x = text_rect.x + text_rect.w + margin, y = bbox.y, w = label_w, h = bbox.h }
 	local char_rect = { x = text_rect.x + margin, y = text_rect.y, w = (utf8.len( visible_text ) * font.w), h = text_rect.h }
 
-	-- Caret
+	-- Text editing
 	local caret_rect = nil
 	if active_widget == cur_window.id .. name then
 		if text_input_character then
@@ -928,16 +929,23 @@ function UI2D.TextBox( name, num_visible_chars, text )
 				text = part1 .. part2
 
 				local max_scroll = utf8.len( text ) - num_visible_chars
-				-- if active_textbox.scroll < max_scroll or utf8.len( text ) <= num_visible_chars then
 				if active_textbox.scroll < max_scroll or utf8.len( text ) < num_visible_chars then
 					active_textbox.caret = active_textbox.caret - 1
 				end
-				-- if active_textbox.scroll <= 0 then
-				-- 	active_textbox.caret = active_textbox.caret - 1
-				-- end
-				-- if active_textbox.scroll > max_scroll then
-				-- 	active_textbox.scroll = active_textbox.scroll - 1
-				-- end
+			end
+		end
+
+		if lovr.system.wasKeyPressed( "delete" ) or repeating_key == "delete" then
+			if active_textbox.caret < num_visible_chars and active_textbox.caret < utf8.len( text ) then
+				local p = active_textbox.caret + active_textbox.scroll
+				local part1 = utf8.sub( text, 1, p )
+				local part2 = utf8.sub( text, p + 2, utf8.len( text ) )
+				text = part1 .. part2
+
+				local max_scroll = utf8.len( text ) - num_visible_chars
+				if active_textbox.scroll >= max_scroll and utf8.len( text ) > num_visible_chars then
+					active_textbox.caret = active_textbox.caret + 1
+				end
 			end
 		end
 
