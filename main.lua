@@ -14,6 +14,8 @@ local check2 = false
 local rb_idx = 1
 local progress = { value = 0, adder = 0 }
 local txt1 = "Αυτό είναι utf8 κείμενο"
+local amplitude = 50
+local frequency = 0.1
 
 function lovr.load()
 	UI2D.Init()
@@ -96,6 +98,28 @@ function lovr.draw( pass )
 	if UI2D.CheckBox( "Another check", check2 ) then
 		check2 = not check2
 	end
+
+	UI2D.Label( "Custom widget", true )
+	local clicked, held, released, hovered, x, y, mx, my, win_x, win_y = UI2D.CustomWidget( "custom", 300, 200 )
+	pass:setColor( 1, 1, 1 )
+
+	if held then
+		pass:setColor( 1, 0.5, 0 )
+		amplitude = (50 * my) / 200
+		frequency = (0.2 * mx) / 300
+	elseif hovered then
+		pass:setColor( 0.8, 0.8, 0.8 )
+	end
+
+	local xx = x
+	local yy = y
+
+	for i = 1, 300 do
+		yy = 100 + y + (amplitude * math.sin( frequency * (xx - win_x) ))
+		pass:points( xx, yy, 0 )
+		xx = xx + 1
+	end
+
 	released, sl3 = UI2D.SliderFloat( "hello", sl3, 0, 100, 300 )
 	UI2D.End( pass )
 	UI2D.ResetColor( "window_bg" )

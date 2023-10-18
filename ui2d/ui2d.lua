@@ -22,6 +22,7 @@ local mouse = { x = 0, y = 0, state = e_mouse_state.idle, prev_frame = 0, this_f
 local texture_flags = { mipmaps = true, usage = { 'sample', 'render', 'transfer' } }
 local layout = { x = 0, y = 0, w = 0, h = 0, row_h = 0, total_w = 0, total_h = 0, same_line = false, same_column = false }
 local clamp_sampler = lovr.graphics.newSampler( { wrap = 'clamp' } )
+local next_z = 1
 
 color_themes.dark =
 {
@@ -353,9 +354,39 @@ function UI2D.InputInfo()
 		for i, v in ipairs( windows ) do
 			if PointInRect( mouse.x, mouse.y, v.x, v.y, v.w, v.h ) and mouse.state == e_mouse_state.clicked then
 				active_window = v
+				local z = v.z
+				local idx = nil
+				for j, k in ipairs( windows ) do
+					if k.z < z then
+						z = k.z
+						idx = j
+					end
+				end
+				if idx then
+					v.z = windows[ idx ].z - 0.01
+				end
 			end
 		end
 	end
+
+
+	-- 0.99
+	-- 0.98
+	-- 0.97
+	-- 0.96
+	-- 0.95
+	-- if was_set_to_front then
+	-- 	local z = 100
+	-- 	local old_idx = nil
+	-- 	for i, v in ipairs( windows ) do
+	-- 		if v.z < z then
+	-- 			old_idx = i
+	-- 			z = v.z
+	-- 		end
+	-- 	end
+	-- 	print( windows[ old_idx ].z, windows[ new_idx ].z )
+	-- 	windows[ old_idx ].z, windows[ new_idx ].z = windows[ new_idx ].z, windows[ old_idx ].z
+	-- end
 
 	-- Set active to none
 	if not hovers_any and mouse.state == e_mouse_state.clicked then
@@ -388,11 +419,13 @@ function UI2D.Begin( name, x, y, is_modal )
 	local exists, idx = WindowExists( name ) -- TODO: Can't currently change window title on runtime
 
 	if not exists then
+		next_z = next_z - 0.01
 		local window = {
 			id = name,
 			title = GetLabelPart( name ),
 			x = x,
 			y = y,
+			z = next_z,
 			w = 0,
 			h = 0,
 			command_list = {},
@@ -501,13 +534,6 @@ function UI2D.End( main_pass )
 			cur_window.pass:setColor( 1, 1, 1 )
 		end
 	end
-
-	main_pass:setColor( 1, 1, 1 )
-	main_pass:setMaterial( cur_window.texture )
-	local z = 1
-	if cur_window == active_window then z = 0 end
-	main_pass:plane( cur_window.x + (cur_window.w / 2), cur_window.y + (cur_window.h / 2), z, cur_window.w, -cur_window.h ) --NOTE flip Y fix
-	main_pass:setMaterial()
 
 	ResetLayout()
 end
@@ -1057,11 +1083,60 @@ end
 function UI2D.ListBox( name )
 end
 
+function UI2D.CustomWidget( name, width, height )
+	local cur_window = windows[ begin_idx ]
+
+	local bbox = {}
+	if layout.same_line then
+		bbox = { x = layout.x + layout.w + margin, y = layout.y, w = width, h = height }
+	elseif layout.same_column then
+		bbox = { x = layout.x, y = layout.y + layout.h + margin, w = width, h = height }
+	else
+		bbox = { x = margin, y = layout.y + layout.row_h + margin, w = width, h = height }
+	end
+
+	UpdateLayout( bbox )
+
+	local clicked = false
+	local held = false
+	local released = false
+	local hovered = false
+
+	if not modal_window or (modal_window and modal_window == cur_window.id) then
+		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) and cur_window == active_window then
+			hovered = true
+
+			if mouse.state == e_mouse_state.clicked then
+				clicked = true
+			end
+
+			if mouse.state == e_mouse_state.held then
+				held = true
+			end
+
+			if mouse.state == e_mouse_state.released then
+				released = true
+			end
+		end
+	end
+
+	table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = bbox, color = colors.button_border } )
+
+	return clicked, held, released, hovered, cur_window.x + bbox.x, cur_window.y + bbox.y, mouse.x - cur_window.x, mouse.y - cur_window.y, cur_window.x, cur_window.y
+end
+
 function UI2D.NewFrame( main_pass )
 	font.handle:setPixelDensity( 1.0 )
 end
 
 function UI2D.RenderFrame( main_pass )
+	for i, v in ipairs( windows ) do
+		main_pass:setColor( 1, 1, 1 )
+		main_pass:setMaterial( v.texture )
+		main_pass:plane( v.x + (v.w / 2), v.y + (v.h / 2), v.z, v.w, -v.h ) --NOTE flip Y fix
+		main_pass:setMaterial()
+	end
+
 	text_input_character = nil
 	local passes = {}
 
