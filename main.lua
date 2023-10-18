@@ -16,7 +16,7 @@ local progress = { value = 0, adder = 0 }
 local txt1 = "Αυτό είναι utf8 κείμενο"
 
 function lovr.load()
-	UI2D.Init( 14 )
+	UI2D.Init()
 end
 
 function lovr.update( dt )
@@ -62,8 +62,12 @@ function lovr.draw( pass )
 	UI2D.Label( "We're doing progress...", true )
 	UI2D.ProgressBar( progress.value )
 	UI2D.Separator()
-	UI2D.Button( "first button2" )
-	UI2D.Button( "first button2" )
+	if UI2D.Button( "Font size +" ) then
+		UI2D.SetFontSize( UI2D.GetFontSize() + 1 )
+	end
+	if UI2D.Button( "Font size -" ) then
+		UI2D.SetFontSize( UI2D.GetFontSize() - 1 )
+	end
 	released, sl1 = UI2D.SliderInt( "a slider", sl1, 0, 100 )
 	if released then
 		print( released, sl1 )

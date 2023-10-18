@@ -109,6 +109,9 @@ color_themes.light =
 
 local colors = color_themes.dark
 
+-- -------------------------------------------------------------------------- --
+--                             Internals                                      --
+-- -------------------------------------------------------------------------- --
 local function Clamp( n, n_min, n_max )
 	if n < n_min then
 		n = n_min
@@ -296,13 +299,19 @@ function lovr.keyreleased( key, scancode )
 	repeating_key = nil
 end
 
----------------------------------------------------------------
+-- -------------------------------------------------------------------------- --
+--                                User                                        --
+-- -------------------------------------------------------------------------- --
 function UI2D.Init( size )
 	font.handle = lovr.graphics.newFont( "ui2d/" .. "DejaVuSansMono.ttf", size or 14, 4 )
 	font.handle:setPixelDensity( 1.0 )
 	font.h = font.handle:getHeight()
 	font.w = font.handle:getWidth( "W" )
+	font.size = size or 14
 	lovr.system.setKeyRepeat( true )
+
+	margin = math.floor( font.h / 2 )
+	separator_thickness = math.floor( font.h / 7 )
 end
 
 function UI2D.InputInfo()
@@ -549,6 +558,21 @@ function UI2D.ResetColor( col_name )
 		colors[ col_name ] = overriden_colors[ col_name ]
 		overriden_colors[ col_name ] = nil
 	end
+end
+
+function UI2D.SetFontSize( size )
+	font.handle = lovr.graphics.newFont( "ui2d/" .. "DejaVuSansMono.ttf", size, 4 )
+	font.handle:setPixelDensity( 1.0 )
+	font.h = font.handle:getHeight()
+	font.w = font.handle:getWidth( "W" )
+	font.size = size
+
+	margin = math.floor( font.h / 2 )
+	separator_thickness = math.floor( font.h / 7 )
+end
+
+function UI2D.GetFontSize()
+	return font.size
 end
 
 function UI2D.SameLine()
