@@ -12,31 +12,32 @@ local tab_bar_idx = 1
 local check1 = true
 local check2 = false
 local rb_idx = 1
+local progress = { value = 0, adder = 0 }
 local txt1 = "Αυτό είναι utf8 κείμενο"
--- local txt1 = "here we are now hello"
 
 function lovr.load()
-	UI2D.Init( 16 )
+	UI2D.Init( 14 )
 end
 
 function lovr.update( dt )
 	UI2D.InputInfo()
-end
 
-function lovr.keypressed( key, scancode, repeating )
-	-- txt = txt .. "0"
-	-- UI2D.SetWindowPosition( "third##blah", 100, 150 )
+	progress.adder = progress.adder + (10 * dt)
+	if progress.adder > 100 then progress.adder = 0 end
+	progress.value = math.floor( progress.adder )
 end
 
 function lovr.draw( pass )
 	pass:setProjection( 1, mat4():orthographic( pass:getDimensions() ) )
+	pass:setColor( 1, 0, 0 )
+	pass:plane( 100, 100, 0, 100, 100 )
 	UI2D.NewFrame( pass )
 
 	UI2D.Begin( "first", 300, 300 )
 	if UI2D.Button( "first button" ) then
 		print( "from 1st button" )
 	end
-	if UI2D.ImageButton( icon, 40, 40 ) then
+	if UI2D.ImageButton( icon, 32, 32, "img button" ) then
 		print( "img" )
 	end
 	if UI2D.RadioButton( "Radio1", rb_idx == 1 ) then
@@ -48,11 +49,18 @@ function lovr.draw( pass )
 	if UI2D.RadioButton( "Radio3", rb_idx == 3 ) then
 		rb_idx = 3
 	end
-	UI2D.Button( "second button" )
+	if UI2D.Button( "Change theme" ) then
+		if UI2D.GetColorTheme() == "light" then
+			UI2D.SetColorTheme( "dark" )
+		else
+			UI2D.SetColorTheme( "light" )
+		end
+	end
 	UI2D.End( pass )
 
 	UI2D.Begin( "second", 400, 200 )
-	UI2D.ProgressBar( 20 )
+	UI2D.Label( "We're doing progress...", true )
+	UI2D.ProgressBar( progress.value )
 	UI2D.Separator()
 	UI2D.Button( "first button2" )
 	UI2D.Button( "first button2" )
@@ -65,12 +73,16 @@ function lovr.draw( pass )
 
 	UI2D.Begin( "third", 350, 240 )
 	UI2D.Button( "blah1" )
-	UI2D.Button( "blah2" )
+	UI2D.OverrideColor( "button_bg", { 0.8, 0, 0.8 } )
+	UI2D.Button( "colored button" )
+	UI2D.ResetColor( "button_bg" )
+	UI2D.Button( "blah3" )
 	UI2D.SameLine()
 	released, sl2 = UI2D.SliderInt( "hello", sl2, 0, 100 )
 	UI2D.End( pass )
 
-	UI2D.Begin( "fourth", 250, 250 )
+	UI2D.OverrideColor( "window_bg", { 0.1, 0.2, 0.6 } )
+	UI2D.Begin( "Colored window", 250, 250 )
 	UI2D.Button( txt )
 	UI2D.SameLine()
 	txt1 = UI2D.TextBox( "textbox1", 11, txt1 )
@@ -82,6 +94,7 @@ function lovr.draw( pass )
 	end
 	released, sl3 = UI2D.SliderFloat( "hello", sl3, 0, 100, 300 )
 	UI2D.End( pass )
+	UI2D.ResetColor( "window_bg" )
 
 	UI2D.Begin( "TabBar window", 350, 100 )
 	local was_clicked, idx = UI2D.TabBar( "my tab bar", { "first", "second", "third" }, tab_bar_idx )
@@ -105,9 +118,8 @@ function lovr.draw( pass )
 
 	local ui_passes = UI2D.RenderFrame( pass )
 
-	pass:setColor( 1, 0, 0 )
-	pass:plane( 100, 100, 0, 100, 100 )
+	-- pass:setColor( 1, 0, 0 )
+	-- pass:plane( 100, 100, 0, 100, 100 )
 	table.insert( ui_passes, pass )
-	-- print( #ui_passes )
 	return lovr.graphics.submit( ui_passes )
 end

@@ -8,11 +8,14 @@ local active_window = nil
 local active_widget = nil
 local active_textbox = nil
 local dragged_window = nil
+local repeating_key = nil
+local text_input_character = nil
 local begin_idx = nil
 local margin = 8
 local separator_thickness = 2
 local windows = {}
 local color_themes = {}
+local overriden_colors = {}
 local font = { handle = nil, w = nil, h = nil }
 local dragged_window_offset = { x = 0, y = 0 }
 local mouse = { x = 0, y = 0, state = e_mouse_state.idle, prev_frame = 0, this_frame = 0 }
@@ -272,7 +275,24 @@ function utf8.sub( s, i, j )
 end
 
 function lovr.textinput( text, code )
-	--
+	text_input_character = text
+	-- print( "here")
+end
+
+function lovr.keypressed( key, scancode, repeating )
+	if repeating then
+		if key == "right" then
+			repeating_key = "right"
+		elseif key == "left" then
+			repeating_key = "left"
+		elseif key == "backspace" then
+			repeating_key = "backspace"
+		end
+	end
+end
+
+function lovr.keyreleased( key, scancode )
+	repeating_key = nil
 end
 
 ---------------------------------------------------------------
@@ -281,6 +301,7 @@ function UI2D.Init( size )
 	font.handle:setPixelDensity( 1.0 )
 	font.h = font.handle:getHeight()
 	font.w = font.handle:getWidth( "W" )
+	lovr.system.setKeyRepeat( true )
 end
 
 function UI2D.InputInfo()
@@ -350,14 +371,6 @@ function UI2D.InputInfo()
 
 	if mouse.state == e_mouse_state.released then
 		dragged_window = nil
-	end
-
-	-- Unfocus textbox
-	if mouse.state == e_mouse_state.clicked then
-		if not active_textbox then
-			active_widget = nil
-			active_textbox = nil
-		end
 	end
 end
 
@@ -498,6 +511,43 @@ function UI2D.SetWindowPosition( id, x, y )
 	end
 
 	return false
+end
+
+function UI2D.SetColorTheme( theme, copy_from )
+	if type( theme ) == "string" then
+		colors = color_themes[ theme ]
+	elseif type( theme ) == "table" then
+		copy_from = copy_from or "dark"
+		for i, v in pairs( color_themes[ copy_from ] ) do
+			if theme[ i ] == nil then
+				theme[ i ] = v
+			end
+		end
+		colors = theme
+	end
+end
+
+function UI2D.GetColorTheme()
+	for i, v in pairs( color_themes ) do
+		if v == colors then
+			return i
+		end
+	end
+end
+
+function UI2D.OverrideColor( col_name, color )
+	if not overriden_colors[ col_name ] then
+		local old_color = colors[ col_name ]
+		overriden_colors[ col_name ] = old_color
+		colors[ col_name ] = color
+	end
+end
+
+function UI2D.ResetColor( col_name )
+	if overriden_colors[ col_name ] then
+		colors[ col_name ] = overriden_colors[ col_name ]
+		overriden_colors[ col_name ] = nil
+	end
 end
 
 function UI2D.SameLine()
@@ -711,8 +761,15 @@ function UI2D.TabBar( name, tabs, idx )
 		table.insert( windows[ begin_idx ].command_list, { type = "text", text = v, bbox = tab_rect, color = colors.text } )
 
 		if idx == i then
+			-- table.insert( windows[ begin_idx ].command_list,
+			-- 	{ type = "rect_fill", bbox = { x = tab_rect.x + 2, y = tab_rect.y + tab_rect.h - 6, w = tab_rect.w - 4, h = 5 }, color = colors.tab_bar_highlight } )
+			local highlight_thickness = math.floor( font.h / 4 )
 			table.insert( windows[ begin_idx ].command_list,
-				{ type = "rect_fill", bbox = { x = tab_rect.x + 2, y = tab_rect.y + tab_rect.h - 6, w = tab_rect.w - 4, h = 5 }, color = colors.tab_bar_highlight } )
+				{
+					type = "rect_fill",
+					bbox = { x = tab_rect.x + 2, y = tab_rect.y + tab_rect.h - (highlight_thickness), w = tab_rect.w - 4, h = highlight_thickness },
+					color = colors.tab_bar_highlight
+				} )
 		end
 		x_off = x_off + tab_w
 	end
@@ -834,42 +891,56 @@ function UI2D.TextBox( name, num_visible_chars, text )
 
 	UpdateLayout( bbox )
 
-	local col1 = colors.textbox_bg
-	local col2 = colors.textbox_border
-
-	local text_rect = { x = bbox.x, y = bbox.y, w = (2 * margin) + (num_visible_chars * font.w), h = bbox.h }
-	if not modal_window or (modal_window and modal_window == cur_window.id) then
-		if PointInRect( mouse.x, mouse.y, text_rect.x + cur_window.x, text_rect.y + cur_window.y, text_rect.w, text_rect.h ) and cur_window == active_window then
-			col1 = colors.textbox_bg_hover
-
-			if mouse.state == e_mouse_state.clicked then
-				local pos = math.floor( (mouse.x - cur_window.x - text_rect.x) / font.w )
-
-				if active_widget ~= cur_window.id .. name then
-					active_textbox = { caret = pos }
-					active_textbox.scroll = 0
-					active_widget = cur_window.id .. name
-				else
-					active_textbox.caret = pos
-				end
-			end
-		end
-	end
-
 	local scroll = 0
 	if active_textbox then
 		scroll = active_textbox.scroll
 	end
 
-	local visible_text = utf8.sub( text, scroll + 1, scroll + num_visible_chars )
+	local text_rect = { x = bbox.x, y = bbox.y, w = (2 * margin) + (num_visible_chars * font.w), h = bbox.h }
+	local visible_text = nil
+	if utf8.len( text ) > num_visible_chars then
+		visible_text = utf8.sub( text, scroll + 1, scroll + num_visible_chars )
+	else
+		visible_text = text
+	end
 	local label_rect = { x = text_rect.x + text_rect.w + margin, y = bbox.y, w = label_w, h = bbox.h }
 	local char_rect = { x = text_rect.x + margin, y = text_rect.y, w = (utf8.len( visible_text ) * font.w), h = text_rect.h }
-
 
 	-- Caret
 	local caret_rect = nil
 	if active_widget == cur_window.id .. name then
-		if lovr.system.wasKeyPressed( "left" ) then
+		if text_input_character then
+			local p = active_textbox.caret + active_textbox.scroll
+			local part1 = utf8.sub( text, 1, p )
+			local part2 = utf8.sub( text, p + 1, utf8.len( text ) )
+			text = part1 .. text_input_character .. part2
+			active_textbox.caret = active_textbox.caret + 1
+			if active_textbox.caret > num_visible_chars then
+				active_textbox.scroll = active_textbox.scroll + 1
+			end
+		end
+
+		if lovr.system.wasKeyPressed( "backspace" ) or repeating_key == "backspace" then
+			if active_textbox.caret > 0 then
+				local p = active_textbox.caret + active_textbox.scroll
+				local part1 = utf8.sub( text, 1, p - 1 )
+				local part2 = utf8.sub( text, p + 1, utf8.len( text ) )
+				text = part1 .. part2
+
+				local max_scroll = utf8.len( text ) - num_visible_chars
+				if active_textbox.scroll < max_scroll or utf8.len( text ) <= num_visible_chars then
+					active_textbox.caret = active_textbox.caret - 1
+				end
+				-- if active_textbox.scroll <= 0 then
+				-- 	active_textbox.caret = active_textbox.caret - 1
+				-- end
+				-- if active_textbox.scroll > max_scroll then
+				-- 	active_textbox.scroll = active_textbox.scroll - 1
+				-- end
+			end
+		end
+
+		if lovr.system.wasKeyPressed( "left" ) or repeating_key == "left" then
 			if active_textbox.caret == 0 then
 				if active_textbox.scroll > 0 then
 					active_textbox.scroll = active_textbox.scroll - 1
@@ -878,18 +949,67 @@ function UI2D.TextBox( name, num_visible_chars, text )
 			active_textbox.caret = active_textbox.caret - 1
 		end
 
-		if lovr.system.wasKeyPressed( "right" ) then
+		if lovr.system.wasKeyPressed( "right" ) or repeating_key == "right" then
 			local full_length = utf8.len( text )
 			local visible_length = utf8.len( visible_text )
 			if active_textbox.caret == num_visible_chars and full_length > num_visible_chars and active_textbox.scroll < (full_length - visible_length) then
 				active_textbox.scroll = active_textbox.scroll + 1
 			end
-			active_textbox.caret = active_textbox.caret + 1
+			if active_textbox.caret < full_length then
+				active_textbox.caret = active_textbox.caret + 1
+			end
 		end
 
-		active_textbox.caret = Clamp( active_textbox.caret, 0, utf8.len( visible_text ) )
+
+
+		active_textbox.scroll = Clamp( active_textbox.scroll, 0, utf8.len( text ) - num_visible_chars )
+		scroll = active_textbox.scroll
+
+		active_textbox.caret = Clamp( active_textbox.caret, 0, num_visible_chars )
+
 		caret_rect = { x = char_rect.x + (active_textbox.caret * font.w), y = char_rect.y + margin, w = 2, h = font.h }
 	end
+
+	local col1 = colors.textbox_bg
+	local col2 = colors.textbox_border
+
+	if not modal_window or (modal_window and modal_window == cur_window.id) then
+		if PointInRect( mouse.x, mouse.y, text_rect.x + cur_window.x, text_rect.y + cur_window.y, text_rect.w, text_rect.h ) and cur_window == active_window then
+			col1 = colors.textbox_bg_hover
+
+			if mouse.state == e_mouse_state.clicked then
+				local pos = math.floor( (mouse.x - cur_window.x - text_rect.x) / font.w )
+				if pos > utf8.len( text ) then
+					pos = utf8.len( text )
+				end
+
+				if active_widget ~= cur_window.id .. name then
+					active_textbox = { id = cur_window.id .. name, caret = pos }
+					active_textbox.scroll = 0
+					active_widget = cur_window.id .. name
+				else
+					active_textbox.caret = pos
+				end
+			end
+		else
+			if mouse.state == e_mouse_state.clicked then
+				if active_widget == cur_window.id .. name then -- Deactivate self
+					active_textbox = nil
+					active_widget = nil
+					return text
+				end
+			end
+		end
+
+		if active_widget == cur_window.id .. name then
+			if lovr.system.wasKeyPressed( "tab" ) or lovr.system.wasKeyPressed( "return" ) then -- Deactivate self
+				active_textbox = nil
+				active_widget = nil
+				return text
+			end
+		end
+	end
+
 
 	table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = text_rect, color = col1 } )
 	table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = text_rect, color = col2 } )
@@ -903,11 +1023,15 @@ function UI2D.TextBox( name, num_visible_chars, text )
 	return text
 end
 
+function UI2D.ListBox( name )
+end
+
 function UI2D.NewFrame( main_pass )
 	font.handle:setPixelDensity( 1.0 )
 end
 
 function UI2D.RenderFrame( main_pass )
+	text_input_character = nil
 	local passes = {}
 
 	for i, v in ipairs( windows ) do
