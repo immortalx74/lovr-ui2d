@@ -13,18 +13,19 @@ local repeating_key = nil
 local text_input_character = nil
 local begin_idx = nil
 local margin = 8
+local next_z = 0
 local separator_thickness = 2
 local windows = {}
 local color_themes = {}
 local overriden_colors = {}
 local custom_widgets = {}
+local caret_blink = { prev = lovr.timer.getTime(), on = false }
 local font = { handle = nil, w = nil, h = nil }
 local dragged_window_offset = { x = 0, y = 0 }
 local mouse = { x = 0, y = 0, state = e_mouse_state.idle, prev_frame = 0, this_frame = 0 }
 local texture_flags = { mipmaps = true, usage = { 'sample', 'render', 'transfer' } }
 local layout = { x = 0, y = 0, w = 0, h = 0, row_h = 0, total_w = 0, total_h = 0, same_line = false, same_column = false }
 local clamp_sampler = lovr.graphics.newSampler( { wrap = 'clamp' } )
-local next_z = 0
 
 color_themes.dark =
 {
@@ -413,6 +414,16 @@ function UI2D.InputInfo()
 
 	if mouse.state == e_mouse_state.released then
 		dragged_window = nil
+	end
+
+	local now = lovr.timer.getTime()
+	if now > caret_blink.prev + 0.4 then
+		caret_blink.on = true
+	end
+
+	if now > caret_blink.prev + 0.8 then
+		caret_blink.on = false
+		caret_blink.prev = now
 	end
 end
 
@@ -1087,7 +1098,7 @@ function UI2D.TextBox( name, num_visible_chars, text )
 	table.insert( windows[ begin_idx ].command_list, { type = "text", text = visible_text, bbox = char_rect, color = colors.text } )
 	table.insert( windows[ begin_idx ].command_list, { type = "text", text = name, bbox = label_rect, color = colors.text } )
 
-	if caret_rect then
+	if caret_rect and caret_blink.on then
 		table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = caret_rect, color = colors.text } )
 	end
 
