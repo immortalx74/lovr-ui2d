@@ -1,4 +1,4 @@
-UI2D = require "ui2d/ui2d"
+UI2D = require "ui2d..ui2d"
 
 lovr.graphics.setBackgroundColor( 0.2, 0.2, 0.7 )
 local win1_pos_x = 300

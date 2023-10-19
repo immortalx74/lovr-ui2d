@@ -52,8 +52,8 @@ color_themes.dark =
 	list_border = { 0, 0, 0 },
 	list_selected = { 0.3, 0.3, 1 },
 	list_highlight = { 0.3, 0.3, 0.3 },
-	list_track = { 0.19, 0.19, 0.19 },
-	list_thumb = { 0.1, 0.1, 0.1 },
+	list_track = { 0.11, 0.11, 0.11 },
+	list_thumb = { 0.5, 0.5, 0.5 },
 	textbox_bg = { 0.03, 0.03, 0.03 },
 	textbox_bg_hover = { 0.11, 0.11, 0.11 },
 	textbox_border = { 0.1, 0.1, 0.1 },
@@ -189,7 +189,7 @@ local function GetLabelPart( name )
 	return name
 end
 
-local function GetLongerString( t )
+local function GetLongerStringLen( t )
 	local len = 0
 	local idx = 0
 	for i, v in ipairs( t ) do
@@ -200,7 +200,7 @@ local function GetLongerString( t )
 		end
 	end
 
-	return t[ idx ]
+	return len
 end
 
 local function ResetLayout()
@@ -596,6 +596,13 @@ function UI2D.SetWindowPosition( id, x, y )
 	end
 
 	return false
+end
+
+function UI2D.GetWindowPosition( id )
+	local exists, idx = WindowExists( id )
+	if exists then
+		return windows[ idx ].x, windows[ idx ].y
+	end
 end
 
 function UI2D.SetColorTheme( theme, copy_from )
@@ -1170,14 +1177,24 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 
 	UpdateLayout( bbox )
 
+	-- Draw scrollbars
 	local sb_vertical = { x = bbox.x + bbox.w - sbt, y = bbox.y + sbt, w = sbt, h = bbox.h - (3 * sbt) }
 	local sb_horizontal = { x = bbox.x + sbt, y = bbox.y + bbox.h - sbt, w = bbox.w - (3 * sbt), h = sbt }
+	local sb_button_top = { x = bbox.x + bbox.w - sbt, y = bbox.y, w = sbt, h = sbt }
+	local sb_button_bottom = { x = bbox.x + bbox.w - sbt, y = bbox.y + bbox.h - (2 * sbt), w = sbt, h = sbt }
+	local sb_button_left = { x = bbox.x, y = bbox.y + bbox.h - sbt, w = sbt, h = sbt }
+	local sb_button_right = { x = bbox.x + bbox.w - (2 * sbt), y = bbox.y + bbox.h - sbt, w = sbt, h = sbt }
+
 	table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = bbox, color = colors.list_bg } )
 	table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = bbox, color = colors.list_border } )
 	table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = sb_vertical, color = colors.list_track } )
 	table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = sb_horizontal, color = colors.list_track } )
+	table.insert( windows[ begin_idx ].command_list, { type = "text", text = "△", bbox = sb_button_top, color = colors.text } )
+	table.insert( windows[ begin_idx ].command_list, { type = "text", text = "▽", bbox = sb_button_bottom, color = colors.text } )
+	table.insert( windows[ begin_idx ].command_list, { type = "text", text = "◁", bbox = sb_button_left, color = colors.text } )
+	table.insert( windows[ begin_idx ].command_list, { type = "text", text = "▷", bbox = sb_button_right, color = colors.text } )
 
-	local max_total_chars_x = GetLongerString( collection )
+	local max_total_chars_x = GetLongerStringLen( collection )
 	local highlight_idx = nil
 	local result = false
 
@@ -1192,13 +1209,30 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 					listbox_state[ lst_idx ].selected_idx = highlight_idx + listbox_state[ lst_idx ].scroll_y
 					result = true
 				end
-			elseif PointInRect( mouse.x, mouse.y, sb_vertical.x + cur_window.x, sb_vertical.y + cur_window.y, sbt, sb_vertical.h ) then -- In V scrollbar
-
-			elseif PointInRect( mouse.x, mouse.y, sb_horizontal.x + cur_window.x, sb_horizontal.y + cur_window.y, sb_horizontal.w, sbt ) then -- In H scrollbar
-
+			elseif PointInRect( mouse.x, mouse.y, sb_vertical.x + cur_window.x, sb_vertical.y + cur_window.y, sbt, sb_vertical.h ) then -- v_scrollbar
+			elseif PointInRect( mouse.x, mouse.y, sb_horizontal.x + cur_window.x, sb_horizontal.y + cur_window.y, sb_horizontal.w, sbt ) then -- h_scrollbar
+			elseif PointInRect( mouse.x, mouse.y, sb_button_top.x + cur_window.x, sb_button_top.y + cur_window.y, sb_button_top.w, sbt ) then -- button top
+				if mouse.state == e_mouse_state.clicked then
+					listbox_state[ lst_idx ].scroll_y = listbox_state[ lst_idx ].scroll_y - 1
+				end
+			elseif PointInRect( mouse.x, mouse.y, sb_button_bottom.x + cur_window.x, sb_button_bottom.y + cur_window.y, sb_button_bottom.w, sbt ) then -- button bottom
+				if mouse.state == e_mouse_state.clicked then
+					listbox_state[ lst_idx ].scroll_y = listbox_state[ lst_idx ].scroll_y + 1
+				end
+			elseif PointInRect( mouse.x, mouse.y, sb_button_left.x + cur_window.x, sb_button_left.y + cur_window.y, sb_button_left.w, sbt ) then -- button left
+				if mouse.state == e_mouse_state.clicked then
+					listbox_state[ lst_idx ].scroll_x = listbox_state[ lst_idx ].scroll_x - 1
+				end
+			elseif PointInRect( mouse.x, mouse.y, sb_button_right.x + cur_window.x, sb_button_right.y + cur_window.y, sb_button_right.w, sbt ) then -- button right
+				if mouse.state == e_mouse_state.clicked then
+					listbox_state[ lst_idx ].scroll_x = listbox_state[ lst_idx ].scroll_x + 1
+				end
 			end
 		end
 	end
+
+	listbox_state[ lst_idx ].scroll_y = Clamp( listbox_state[ lst_idx ].scroll_y, 0, #collection - num_visible_rows )
+	listbox_state[ lst_idx ].scroll_x = Clamp( listbox_state[ lst_idx ].scroll_x, 0, max_total_chars_x - num_visible_chars - 1 )
 
 	local scroll_y = listbox_state[ lst_idx ].scroll_y
 	local scroll_x = listbox_state[ lst_idx ].scroll_x
@@ -1231,14 +1265,17 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 		if cur_len - scroll_x > num_visible_chars + 1 then
 			final_str = utf8.sub( cur, scroll_x + 1, num_visible_chars + scroll_x + 1 )
 		else
-			final_str = utf8.sub( cur, scroll_x + 1, cur_len )
+			if scroll_x + 1 <= cur_len then
+				final_str = utf8.sub( cur, scroll_x + 1, cur_len )
+			end
 		end
 
-		local final_len = utf8.len( final_str )
-		local item_w = final_len * font.w
-		table.insert( windows[ begin_idx ].command_list,
-			{ type = "text", text = final_str, bbox = { x = bbox.x, y = y_offset, w = item_w + margin, h = font.h }, color = colors.text } )
-
+		if final_str then
+			local final_len = utf8.len( final_str )
+			local item_w = final_len * font.w
+			table.insert( windows[ begin_idx ].command_list,
+				{ type = "text", text = final_str, bbox = { x = bbox.x, y = y_offset, w = item_w + margin, h = font.h }, color = colors.text } )
+		end
 		y_offset = y_offset + font.h
 	end
 end
