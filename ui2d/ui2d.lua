@@ -19,6 +19,7 @@ local windows = {}
 local color_themes = {}
 local overriden_colors = {}
 local custom_widgets = {}
+local listbox_state = {}
 local caret_blink = { prev = lovr.timer.getTime(), on = false }
 local font = { handle = nil, w = nil, h = nil }
 local dragged_window_offset = { x = 0, y = 0 }
@@ -51,6 +52,8 @@ color_themes.dark =
 	list_border = { 0, 0, 0 },
 	list_selected = { 0.3, 0.3, 1 },
 	list_highlight = { 0.3, 0.3, 0.3 },
+	list_track = { 0.19, 0.19, 0.19 },
+	list_thumb = { 0.1, 0.1, 0.1 },
 	textbox_bg = { 0.03, 0.03, 0.03 },
 	textbox_bg_hover = { 0.11, 0.11, 0.11 },
 	textbox_border = { 0.1, 0.1, 0.1 },
@@ -99,6 +102,8 @@ color_themes.light =
 	list_border = { 0.000, 0.000, 0.000 },
 	list_selected = { 0.686, 0.687, 0.688 },
 	list_highlight = { 0.808, 0.810, 0.811 },
+	list_track = { 0.8, 0.8, 0.8 },
+	list_thumb = { 0.6, 0.6, 0.6 },
 	check_mark = { 0.000, 0.000, 0.000 },
 	radio_border = { 0.000, 0.000, 0.000 },
 	radio_border_hover = { 0.760, 0.760, 0.760 },
@@ -155,6 +160,15 @@ local function WidgetExists( id )
 	return false, 0
 end
 
+local function ListBoxExists( id )
+	for i, v in ipairs( listbox_state ) do
+		if v.id == id then
+			return true, i
+		end
+	end
+	return false, 0
+end
+
 local function PointInRect( px, py, rx, ry, rw, rh )
 	if px >= rx and px <= rx + rw and py >= ry and py <= ry + rh then
 		return true
@@ -173,6 +187,20 @@ local function GetLabelPart( name )
 		return string.sub( name, 1, i - 1 )
 	end
 	return name
+end
+
+local function GetLongerString( t )
+	local len = 0
+	local idx = 0
+	for i, v in ipairs( t ) do
+		local cur = utf8.len( v )
+		if cur > len then
+			len = cur
+			idx = i
+		end
+	end
+
+	return t[ idx ]
 end
 
 local function ResetLayout()
@@ -1105,9 +1133,115 @@ function UI2D.TextBox( name, num_visible_chars, text )
 	return text
 end
 
--- NOTE Not implemented yet
--- function UI2D.ListBox( name )
--- end
+-- NOTE WIP
+function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, selected )
+	local cur_window = windows[ begin_idx ]
+	local exists, lst_idx = ListBoxExists( cur_window.id .. name )
+
+	if not exists then
+		local selected_idx = 1
+		if type( selected ) == "number" then
+			selected_idx = selected
+		elseif type( selected ) == "string" then
+			for i = 1, #collection do
+				if selected == collection[ i ] then
+					selected_idx = i
+					break
+				end
+			end
+		end
+		local lb = { id = cur_window.id .. name, selected_idx = selected_idx, scroll_x = 0, scroll_y = 0 }
+		table.insert( listbox_state, lb )
+	end
+
+	if lst_idx == 0 then
+		lst_idx = #listbox_state
+	end
+
+	local sbt = font.h -- scrollbar thickness
+	local bbox = {}
+	if layout.same_line then
+		bbox = { x = layout.x + layout.w + margin, y = layout.y, w = (2 * margin) + (num_visible_chars * font.w) + sbt, h = (num_visible_rows * font.h) + sbt }
+	elseif layout.same_column then
+		bbox = { x = layout.x, y = layout.y + layout.h + margin, w = (2 * margin) + (num_visible_chars * font.w) + sbt, h = (num_visible_rows * font.h) + sbt }
+	else
+		bbox = { x = margin, y = layout.y + layout.row_h + margin, w = (2 * margin) + (num_visible_chars * font.w) + sbt, h = (num_visible_rows * font.h) + sbt }
+	end
+
+	UpdateLayout( bbox )
+
+	local sb_vertical = { x = bbox.x + bbox.w - sbt, y = bbox.y + sbt, w = sbt, h = bbox.h - (3 * sbt) }
+	local sb_horizontal = { x = bbox.x + sbt, y = bbox.y + bbox.h - sbt, w = bbox.w - (3 * sbt), h = sbt }
+	table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = bbox, color = colors.list_bg } )
+	table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = bbox, color = colors.list_border } )
+	table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = sb_vertical, color = colors.list_track } )
+	table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = sb_horizontal, color = colors.list_track } )
+
+	local max_total_chars_x = GetLongerString( collection )
+	local highlight_idx = nil
+	local result = false
+
+	-- Input
+	if not modal_window or (modal_window and modal_window == cur_window) then
+		if cur_window == active_window then
+			if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w - sbt, bbox.h - sbt ) then -- In content area
+				highlight_idx = math.floor( (mouse.y - cur_window.y - bbox.y) / (font.h) ) + 1
+				highlight_idx = Clamp( highlight_idx, 1, #collection )
+
+				if mouse.state == e_mouse_state.clicked then
+					listbox_state[ lst_idx ].selected_idx = highlight_idx + listbox_state[ lst_idx ].scroll_y
+					result = true
+				end
+			elseif PointInRect( mouse.x, mouse.y, sb_vertical.x + cur_window.x, sb_vertical.y + cur_window.y, sbt, sb_vertical.h ) then -- In V scrollbar
+
+			elseif PointInRect( mouse.x, mouse.y, sb_horizontal.x + cur_window.x, sb_horizontal.y + cur_window.y, sb_horizontal.w, sbt ) then -- In H scrollbar
+
+			end
+		end
+	end
+
+	local scroll_y = listbox_state[ lst_idx ].scroll_y
+	local scroll_x = listbox_state[ lst_idx ].scroll_x
+	local first = scroll_y + 1
+	local last = scroll_y + num_visible_rows
+	if #collection < num_visible_rows then
+		last = #collection
+	end
+
+	-- Draw selected rect
+	local sel_idx = listbox_state[ lst_idx ].selected_idx
+	if sel_idx >= first and sel_idx <= last then
+		local selected_rect = { x = bbox.x, y = bbox.y + (sel_idx - scroll_y - 1) * font.h, w = bbox.w - sbt, h = font.h }
+		table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = selected_rect, color = colors.list_selected } )
+	end
+
+	-- Draw highlight rect
+	if highlight_idx then
+		local highlight_rect = { x = bbox.x, y = bbox.y + ((highlight_idx - 1) * font.h), w = bbox.w - sbt, h = font.h }
+		table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = highlight_rect, color = colors.list_highlight } )
+	end
+
+	-- Draw entries
+	local y_offset = bbox.y
+	for i = first, last do
+		local final_str = nil
+		local cur = collection[ i ]
+		local cur_len = utf8.len( cur )
+
+		if cur_len - scroll_x > num_visible_chars + 1 then
+			final_str = utf8.sub( cur, scroll_x + 1, num_visible_chars + scroll_x + 1 )
+		else
+			final_str = utf8.sub( cur, scroll_x + 1, cur_len )
+		end
+
+		local final_len = utf8.len( final_str )
+		local item_w = final_len * font.w
+		table.insert( windows[ begin_idx ].command_list,
+			{ type = "text", text = final_str, bbox = { x = bbox.x, y = y_offset, w = item_w + margin, h = font.h }, color = colors.text } )
+
+		y_offset = y_offset + font.h
+	end
+end
 
 -- NOTE need to rethink this one
 -- function UI2D.CustomWidget( name, width, height )

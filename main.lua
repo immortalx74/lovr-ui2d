@@ -18,6 +18,10 @@ local txt2 = "Another textbox"
 local amplitude = 50
 local frequency = 0.1
 local modal_window_open = false
+local some_list = { "fade", "wrong", "milky", "zinc", "doubt", "proud", "well-to-do",
+	"carry", "knife", "ordinary", "yielding", "yawn", "salt", "examine", "historical",
+	"group", "certain", "disgusting", "hum", "left", "camera", "grey", "memorize",
+	"squalid", "second-hand", "domineering", "puzzled", "cloudy", "arrogant", "flat" }
 
 function lovr.load()
 	UI2D.Init()
@@ -85,6 +89,8 @@ function lovr.draw( pass )
 	end
 	UI2D.OverrideColor( "button_bg", { 0.8, 0, 0.8 } )
 	UI2D.Button( "colored button" )
+
+	UI2D.ListBox( "list1", 15, 7, some_list )
 	UI2D.ResetColor( "button_bg" )
 	UI2D.Button( "blah3" )
 	UI2D.SameLine()
