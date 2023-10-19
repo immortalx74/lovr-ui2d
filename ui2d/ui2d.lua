@@ -8,6 +8,7 @@ local active_window = nil
 local active_widget = nil
 local active_textbox = nil
 local dragged_window = nil
+local modal_window = nil
 local repeating_key = nil
 local text_input_character = nil
 local begin_idx = nil
@@ -236,7 +237,7 @@ local function Slider( type, name, v, v_min, v_max, width )
 	local col = colors.slider_bg
 	local result = false
 
-	if not modal_window or (modal_window and modal_window == cur_window.id) then
+	if not modal_window or (modal_window and modal_window == cur_window) then
 		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, slider_w, bbox.h ) and cur_window == active_window then
 			col = colors.slider_bg_hover
 
@@ -372,10 +373,14 @@ function UI2D.InputInfo()
 			end
 		end
 
-		if win then
-			next_z = next_z + 0.01
-			win.z = next_z
-			active_window = win
+		if modal_window then
+			active_window = modal_window
+		else
+			if win then
+				next_z = next_z + 0.01
+				win.z = next_z
+				active_window = win
+			end
 		end
 	end
 
@@ -430,9 +435,14 @@ function UI2D.Begin( name, x, y, is_modal )
 			texture_h = 0,
 			pass = nil,
 			is_hovered = false,
-			is_modal = is_modal or false
+			is_modal = is_modal or false,
+			was_called_this_frame = true
 		}
 		table.insert( windows, window )
+
+		if is_modal then
+			modal_window = window
+		end
 	end
 	layout.y = (2 * margin) + font.h
 
@@ -440,6 +450,10 @@ function UI2D.Begin( name, x, y, is_modal )
 		begin_idx = #windows
 	else
 		begin_idx = idx
+	end
+
+	if idx > 0 then
+		windows[ idx ].was_called_this_frame = true
 	end
 end
 
@@ -597,6 +611,10 @@ function UI2D.GetFontSize()
 	return font.size
 end
 
+function UI2D.EndModalWindow()
+	modal_window = nil
+end
+
 function UI2D.SameLine()
 	layout.same_line = true
 end
@@ -632,7 +650,7 @@ function UI2D.Button( name, width, height )
 	local result = false
 	local col = colors.button_bg
 
-	if not modal_window or (modal_window and modal_window == cur_window.id) then
+	if not modal_window or (modal_window and modal_window == cur_window) then
 		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) and cur_window == active_window then
 			col = colors.button_bg_hover
 			if mouse.state == e_mouse_state.clicked then
@@ -733,7 +751,7 @@ function UI2D.ImageButton( texture, width, height, text )
 	local result = false
 	local col = 1
 
-	if not modal_window or (modal_window and modal_window == cur_window.id) then
+	if not modal_window or (modal_window and modal_window == cur_window) then
 		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) and cur_window == active_window then
 			table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = bbox, color = colors.image_button_border_highlight } )
 
@@ -790,7 +808,7 @@ function UI2D.TabBar( name, tabs, idx )
 		local tab_w = text_w + (2 * margin)
 		bbox.w = bbox.w + tab_w
 
-		if not modal_window or (modal_window and modal_window == cur_window.id) then
+		if not modal_window or (modal_window and modal_window == cur_window) then
 			if PointInRect( mouse.x, mouse.y, x_off + cur_window.x, bbox.y + cur_window.y, tab_w, bbox.h ) and cur_window == active_window then
 				col = colors.tab_bar_hover
 				if mouse.state == e_mouse_state.clicked then
@@ -866,7 +884,7 @@ function UI2D.CheckBox( text, checked )
 	local result = false
 	local col = colors.check_border
 
-	if not modal_window or (modal_window and modal_window == cur_window.id) then
+	if not modal_window or (modal_window and modal_window == cur_window) then
 		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) and cur_window == active_window then
 			col = colors.check_border_hover
 			if mouse.state == e_mouse_state.clicked then
@@ -903,7 +921,7 @@ function UI2D.RadioButton( text, checked )
 	local result = false
 	local col = colors.radio_border
 
-	if not modal_window or (modal_window and modal_window == cur_window.id) then
+	if not modal_window or (modal_window and modal_window == cur_window) then
 		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) and cur_window == active_window then
 			col = colors.radio_border_hover
 
@@ -1026,7 +1044,7 @@ function UI2D.TextBox( name, num_visible_chars, text )
 	local col1 = colors.textbox_bg
 	local col2 = colors.textbox_border
 
-	if not modal_window or (modal_window and modal_window == cur_window.id) then
+	if not modal_window or (modal_window and modal_window == cur_window) then
 		if PointInRect( mouse.x, mouse.y, text_rect.x + cur_window.x, text_rect.y + cur_window.y, text_rect.w, text_rect.h ) and cur_window == active_window then
 			col1 = colors.textbox_bg_hover
 
@@ -1111,7 +1129,7 @@ end
 -- 	local released = false
 -- 	local hovered = false
 
--- 	if not modal_window or (modal_window and modal_window == cur_window.id) then
+-- 	if not modal_window or (modal_window and modal_window == cur_window) then
 -- 		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) and cur_window == active_window then
 -- 			hovered = true
 
@@ -1138,13 +1156,23 @@ function UI2D.NewFrame( main_pass )
 end
 
 function UI2D.RenderFrame( main_pass )
-	table.sort( windows, function( a, b ) return a.z < b.z end )
+	table.sort( windows, function( a, b ) return a.z > b.z end )
 
-	for i, v in ipairs( windows ) do
-		main_pass:setColor( 1, 1, 1 )
-		main_pass:setMaterial( v.texture )
-		main_pass:plane( v.x + (v.w / 2), v.y + (v.h / 2), 0, v.w, -v.h ) --NOTE flip Y fix
-		main_pass:setMaterial()
+	local count = #windows
+	for i = count, 1, -1 do
+		local win = windows[ i ]
+
+		if win.was_called_this_frame then
+			main_pass:setColor( 1, 1, 1 )
+			if modal_window and win ~= modal_window then
+				main_pass:setColor( colors.modal_tint )
+			end
+			main_pass:setMaterial( win.texture )
+			main_pass:plane( win.x + (win.w / 2), win.y + (win.h / 2), 0, win.w, -win.h ) --NOTE flip Y fix
+			main_pass:setMaterial()
+		else
+			table.remove( windows, i )
+		end
 	end
 
 	text_input_character = nil
@@ -1153,6 +1181,7 @@ function UI2D.RenderFrame( main_pass )
 	for i, v in ipairs( windows ) do
 		v.command_list = nil
 		v.command_list = {}
+		v.was_called_this_frame = false
 		table.insert( passes, v.pass )
 	end
 	return passes

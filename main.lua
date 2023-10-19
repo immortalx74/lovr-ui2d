@@ -17,6 +17,7 @@ local txt1 = "Αυτό είναι utf8 κείμενο"
 local txt2 = "Another textbox"
 local amplitude = 50
 local frequency = 0.1
+local modal_window_open = false
 
 function lovr.load()
 	UI2D.Init()
@@ -36,7 +37,7 @@ function lovr.draw( pass )
 	-- pass:plane( 100, 100, 0, 100, 100 )
 	UI2D.NewFrame( pass )
 
-	UI2D.Begin( "first", 300, 300 )
+	UI2D.Begin( "first", 100, 200 )
 	if UI2D.Button( "first button" ) then
 		print( "from 1st button" )
 	end
@@ -61,7 +62,7 @@ function lovr.draw( pass )
 	end
 	UI2D.End( pass )
 
-	UI2D.Begin( "second", 400, 200 )
+	UI2D.Begin( "second", 300, 50 )
 	UI2D.Label( "We're doing progress...", true )
 	UI2D.ProgressBar( progress.value )
 	UI2D.Separator()
@@ -78,8 +79,10 @@ function lovr.draw( pass )
 	UI2D.Button( "second button2" )
 	UI2D.End( pass )
 
-	UI2D.Begin( "third", 350, 240 )
-	UI2D.Button( "blah1" )
+	UI2D.Begin( "third", 700, 100 )
+	if UI2D.Button( "Open modal window" ) then
+		modal_window_open = true
+	end
 	UI2D.OverrideColor( "button_bg", { 0.8, 0, 0.8 } )
 	UI2D.Button( "colored button" )
 	UI2D.ResetColor( "button_bg" )
@@ -89,7 +92,7 @@ function lovr.draw( pass )
 	UI2D.End( pass )
 
 	UI2D.OverrideColor( "window_bg", { 0.1, 0.2, 0.6 } )
-	UI2D.Begin( "Colored window", 250, 250 )
+	UI2D.Begin( "Colored window", 650, 300 )
 	UI2D.Button( txt )
 	UI2D.SameLine()
 	txt1 = UI2D.TextBox( "textbox1", 11, txt1 )
@@ -105,7 +108,7 @@ function lovr.draw( pass )
 	UI2D.End( pass )
 	UI2D.ResetColor( "window_bg" )
 
-	UI2D.Begin( "TabBar window", 350, 100 )
+	UI2D.Begin( "TabBar window", 350, 350 )
 	local was_clicked, idx = UI2D.TabBar( "my tab bar", { "first", "second", "third" }, tab_bar_idx )
 	if was_clicked then
 		tab_bar_idx = idx
@@ -124,6 +127,17 @@ function lovr.draw( pass )
 		UI2D.Label( "awesome!" )
 	end
 	UI2D.End( pass )
+
+	-- Modal window
+	if modal_window_open then
+		UI2D.Begin( "Modal window", 300, 200, true )
+		UI2D.Label( "Close this window\nto interact with other windows" )
+		if UI2D.Button( "Close" ) then
+			modal_window_open = false
+			UI2D.EndModalWindow()
+		end
+		UI2D.End( pass )
+	end
 
 	local ui_passes = UI2D.RenderFrame( pass )
 	table.insert( ui_passes, pass )
