@@ -939,7 +939,7 @@ function UI2D.TextBox( name, num_visible_chars, text )
 	UpdateLayout( bbox )
 
 	local scroll = 0
-	if active_textbox then
+	if active_textbox and active_textbox.id == cur_window.id .. name then
 		scroll = active_textbox.scroll
 	end
 
