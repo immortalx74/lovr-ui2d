@@ -23,7 +23,7 @@ local listbox_state = {}
 local caret_blink = { prev = lovr.timer.getTime(), on = false }
 local font = { handle = nil, w = nil, h = nil }
 local dragged_window_offset = { x = 0, y = 0 }
-local mouse = { x = 0, y = 0, state = e_mouse_state.idle, prev_frame = 0, this_frame = 0 }
+local mouse = { x = 0, y = 0, state = e_mouse_state.idle, prev_frame = 0, this_frame = 0, wheel_x = 0, wheel_y = 0 }
 local texture_flags = { mipmaps = true, usage = { 'sample', 'render', 'transfer' } }
 local layout = { x = 0, y = 0, w = 0, h = 0, row_h = 0, total_w = 0, total_h = 0, same_line = false, same_column = false }
 local clamp_sampler = lovr.graphics.newSampler( { wrap = 'clamp' } )
@@ -338,6 +338,11 @@ end
 
 function lovr.keyreleased( key, scancode )
 	repeating_key = nil
+end
+
+function lovr.wheelmoved( deltaX, deltaY )
+	mouse.wheel_x = deltaX
+	mouse.wheel_y = deltaY
 end
 
 -- -------------------------------------------------------------------------- --
@@ -1204,7 +1209,12 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 	-- Input
 	if not modal_window or (modal_window and modal_window == cur_window) then
 		if cur_window == active_window then
-			if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w - sbt, bbox.h - sbt ) then -- In content area
+			if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) then -- whole listbox
+				listbox_state[ lst_idx ].scroll_y = listbox_state[ lst_idx ].scroll_y - mouse.wheel_y
+				listbox_state[ lst_idx ].scroll_x = listbox_state[ lst_idx ].scroll_x - mouse.wheel_x
+			end
+			
+			if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w - sbt, bbox.h - sbt ) then -- content area
 				highlight_idx = math.floor( (mouse.y - cur_window.y - bbox.y) / (font.h) ) + 1
 				highlight_idx = Clamp( highlight_idx, 1, #collection )
 
@@ -1234,8 +1244,17 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 		end
 	end
 
-	listbox_state[ lst_idx ].scroll_y = Clamp( listbox_state[ lst_idx ].scroll_y, 0, #collection - num_visible_rows )
-	listbox_state[ lst_idx ].scroll_x = Clamp( listbox_state[ lst_idx ].scroll_x, 0, max_total_chars_x - num_visible_chars - 1 )
+	local max_scroll_y = 0
+	if #collection > num_visible_rows then
+		max_scroll_y = #collection - num_visible_rows
+	end
+	local max_scroll_x = max_total_chars_x - num_visible_chars - 1
+	if max_scroll_x < 0 then
+		max_scroll_x = 0
+	end
+
+	listbox_state[ lst_idx ].scroll_y = Clamp( listbox_state[ lst_idx ].scroll_y, 0, max_scroll_y )
+	listbox_state[ lst_idx ].scroll_x = Clamp( listbox_state[ lst_idx ].scroll_x, 0, max_scroll_x )
 
 	local scroll_y = listbox_state[ lst_idx ].scroll_y
 	local scroll_x = listbox_state[ lst_idx ].scroll_x
@@ -1268,8 +1287,10 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 		if cur_len - scroll_x > num_visible_chars + 1 then
 			final_str = utf8.sub( cur, scroll_x + 1, num_visible_chars + scroll_x + 1 )
 		else
-			if scroll_x + 1 <= cur_len then
+			if scroll_x < cur_len then
 				final_str = utf8.sub( cur, scroll_x + 1, cur_len )
+			else
+				final_str = cur
 			end
 		end
 
@@ -1359,6 +1380,9 @@ function UI2D.RenderFrame( main_pass )
 			table.remove( windows, i )
 		end
 	end
+
+	mouse.wheel_x = 0
+	mouse.wheel_y = 0
 
 	text_input_character = nil
 	local passes = {}
