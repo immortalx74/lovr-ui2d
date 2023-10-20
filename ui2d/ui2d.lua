@@ -344,7 +344,10 @@ end
 --                                User                                        --
 -- -------------------------------------------------------------------------- --
 function UI2D.Init( size )
-	font.handle = lovr.graphics.newFont( "ui2d/" .. "DejaVuSansMono.ttf", size or 14, 4 )
+	local info = debug.getinfo( 1, "S" )
+	local lib_path = info.source:match( "@(.*[\\/])" )
+
+	font.handle = lovr.graphics.newFont( lib_path .. "DejaVuSansMono.ttf", size or 14, 4 )
 	font.handle:setPixelDensity( 1.0 )
 	font.h = font.handle:getHeight()
 	font.w = font.handle:getWidth( "W" )
