@@ -21,7 +21,11 @@ local modal_window_open = false
 local some_list = { "fade", "wrong", "milky", "zinc", "doubt", "proud", "well-to-do",
 	"carry", "knife", "ordinary", "yielding", "yawn", "salt", "examine", "historical",
 	"group", "certain", "disgusting", "hum", "left", "camera", "grey", "memorize",
-	"squalid", "second-hand", "domineering", "puzzled", "cloudy", "arrogant", "flat" }
+	"squalid", "second-hand", "domineering", "puzzled", "cloudy", "arrogant", "flat",
+	"activity", "obedient", "poke", "power", "brave", "ruthless", "knowing", "shut",
+	"crook", "base", "pleasure", "cycle", "kettle", "regular", "substantial", "flowery",
+	"industrious", "credit", "rice", "harm", "nifty", "boiling", "get", "volleyball",
+	"jobless", "honey", "piquant", "desire", "glossy", "spark", "hulking", "leg", "hurry" }
 
 function lovr.load()
 	UI2D.Init()
@@ -37,11 +41,9 @@ end
 
 function lovr.draw( pass )
 	pass:setProjection( 1, mat4():orthographic( pass:getDimensions() ) )
-	-- pass:setColor( 1, 0, 0 )
-	-- pass:plane( 100, 100, 0, 100, 100 )
 	UI2D.NewFrame( pass )
 
-	UI2D.Begin( "first", 100, 200 )
+	UI2D.Begin( "first", 50, 200 )
 	if UI2D.Button( "first button" ) then
 		print( "from 1st button" )
 	end
@@ -66,7 +68,7 @@ function lovr.draw( pass )
 	end
 	UI2D.End( pass )
 
-	UI2D.Begin( "second", 300, 50 )
+	UI2D.Begin( "second", 250, 50 )
 	UI2D.Label( "We're doing progress...", true )
 	UI2D.ProgressBar( progress.value )
 	UI2D.Separator()
@@ -83,14 +85,16 @@ function lovr.draw( pass )
 	UI2D.Button( "second button2" )
 	UI2D.End( pass )
 
-	UI2D.Begin( "third", 700, 100 )
+	UI2D.Begin( "third", 800, 50 )
 	if UI2D.Button( "Open modal window" ) then
 		modal_window_open = true
 	end
 	UI2D.OverrideColor( "button_bg", { 0.8, 0, 0.8 } )
 	UI2D.Button( "colored button" )
 
-	UI2D.ListBox( "list1", 15, 7, some_list )
+	UI2D.ListBox( "list1", 15, 24, some_list )
+	-- UI2D.SameLine()
+	-- UI2D.ListBox( "list2", 15, 8, some_list )
 	UI2D.ResetColor( "button_bg" )
 	UI2D.Button( "blah3" )
 	UI2D.SameLine()
@@ -98,7 +102,7 @@ function lovr.draw( pass )
 	UI2D.End( pass )
 
 	UI2D.OverrideColor( "window_bg", { 0.1, 0.2, 0.6 } )
-	UI2D.Begin( "Colored window", 650, 300 )
+	UI2D.Begin( "Colored window", 600, 300 )
 	UI2D.Button( txt )
 	UI2D.SameLine()
 	txt1 = UI2D.TextBox( "textbox1", 11, txt1 )
@@ -136,7 +140,7 @@ function lovr.draw( pass )
 
 	-- Modal window
 	if modal_window_open then
-		UI2D.Begin( "Modal window", 300, 200, true )
+		UI2D.Begin( "Modal window", 400, 200, true )
 		UI2D.Label( "Close this window\nto interact with other windows" )
 		if UI2D.Button( "Close" ) then
 			modal_window_open = false

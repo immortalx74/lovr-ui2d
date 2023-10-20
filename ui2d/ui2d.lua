@@ -52,8 +52,8 @@ color_themes.dark =
 	list_border = { 0, 0, 0 },
 	list_selected = { 0.3, 0.3, 1 },
 	list_highlight = { 0.3, 0.3, 0.3 },
-	list_track = { 0.11, 0.11, 0.11 },
-	list_thumb = { 0.5, 0.5, 0.5 },
+	list_track = { 0.08, 0.08, 0.08 },
+	list_thumb = { 0.36, 0.36, 0.36 },
 	textbox_bg = { 0.03, 0.03, 0.03 },
 	textbox_bg_hover = { 0.11, 0.11, 0.11 },
 	textbox_border = { 0.1, 0.1, 0.1 },
@@ -613,6 +613,13 @@ function UI2D.GetWindowPosition( id )
 	end
 end
 
+function UI2D.GetWindowSize( id )
+	local exists, idx = WindowExists( id )
+	if exists then
+		return windows[ idx ].w, windows[ idx ].h
+	end
+end
+
 function UI2D.SetColorTheme( theme, copy_from )
 	if type( theme ) == "string" then
 		colors = color_themes[ theme ]
@@ -1148,7 +1155,6 @@ function UI2D.TextBox( name, num_visible_chars, text )
 	return text
 end
 
--- NOTE WIP
 function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, selected )
 	local cur_window = windows[ begin_idx ]
 	local exists, lst_idx = ListBoxExists( cur_window.id .. name )
@@ -1185,7 +1191,7 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 
 	UpdateLayout( bbox )
 
-	-- Draw scrollbars
+	-- Draw scrollbars	
 	local sb_vertical = { x = bbox.x + bbox.w - sbt, y = bbox.y + sbt, w = sbt, h = bbox.h - (3 * sbt) }
 	local sb_horizontal = { x = bbox.x + sbt, y = bbox.y + bbox.h - sbt, w = bbox.w - (3 * sbt), h = sbt }
 	local sb_button_top = { x = bbox.x + bbox.w - sbt, y = bbox.y, w = sbt, h = sbt }
@@ -1206,14 +1212,14 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 	local highlight_idx = nil
 	local result = false
 
-	-- Input
+	-- Input for buttons and selection
 	if not modal_window or (modal_window and modal_window == cur_window) then
 		if cur_window == active_window then
 			if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) then -- whole listbox
 				listbox_state[ lst_idx ].scroll_y = listbox_state[ lst_idx ].scroll_y - mouse.wheel_y
 				listbox_state[ lst_idx ].scroll_x = listbox_state[ lst_idx ].scroll_x - mouse.wheel_x
 			end
-			
+
 			if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w - sbt, bbox.h - sbt ) then -- content area
 				highlight_idx = math.floor( (mouse.y - cur_window.y - bbox.y) / (font.h) ) + 1
 				highlight_idx = Clamp( highlight_idx, 1, #collection )
@@ -1264,6 +1270,63 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 		last = #collection
 	end
 
+	-- Input for thumbs
+	if not modal_window or (modal_window and modal_window == cur_window) then
+		-- thumb vertical
+		if max_scroll_y > 0 then
+			local v_thumb_height = sb_vertical.h * (num_visible_rows / #collection)
+			local max_dist = sb_vertical.h - v_thumb_height
+			local scroll_distance = MapRange( 0, max_scroll_y, 0, max_dist, scroll_y )
+			local thumb_vertical = { x = bbox.x + bbox.w - sbt, y = bbox.y + sbt + scroll_distance, w = sbt, h = v_thumb_height }
+			table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = thumb_vertical, color = colors.list_thumb } )
+
+			if PointInRect( mouse.x, mouse.y, thumb_vertical.x + cur_window.x, thumb_vertical.y + cur_window.y, sbt, thumb_vertical.h ) then
+				if mouse.state == e_mouse_state.clicked then
+					listbox_state[ lst_idx ].mouse_start_y = mouse.y
+					listbox_state[ lst_idx ].old_scroll_y = listbox_state[ lst_idx ].scroll_y
+				end
+			end
+
+			if mouse.state == e_mouse_state.held and listbox_state[ lst_idx ].mouse_start_y then
+				local pixel_steps = max_scroll_y / font.h
+				local diff = (mouse.y - listbox_state[ lst_idx ].mouse_start_y)
+				listbox_state[ lst_idx ].scroll_y = math.floor( diff / pixel_steps ) + listbox_state[ lst_idx ].old_scroll_y
+			end
+
+			if mouse.state == e_mouse_state.released and listbox_state[ lst_idx ].mouse_start_y then
+				listbox_state[ lst_idx ].mouse_start_y = nil
+				listbox_state[ lst_idx ].old_scroll_y = nil
+			end
+		end
+
+		-- thumb horizontal
+		if max_scroll_x > 0 then
+			local h_thumb_width = sb_horizontal.w * (num_visible_chars / max_total_chars_x)
+			local max_dist = sb_horizontal.w - h_thumb_width
+			local scroll_distance = MapRange( 0, max_scroll_x, 0, max_dist, scroll_x )
+			local thumb_horizontal = { x = bbox.x + sbt + scroll_distance, y = bbox.y + bbox.h - sbt, w = h_thumb_width, h = sbt }
+			table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = thumb_horizontal, color = colors.list_thumb } )
+
+			if PointInRect( mouse.x, mouse.y, thumb_horizontal.x + cur_window.x, thumb_horizontal.y + cur_window.y, thumb_horizontal.w, sbt ) then
+				if mouse.state == e_mouse_state.clicked then
+					listbox_state[ lst_idx ].mouse_start_x = mouse.x
+					listbox_state[ lst_idx ].old_scroll_x = listbox_state[ lst_idx ].scroll_x
+				end
+			end
+
+			if mouse.state == e_mouse_state.held and listbox_state[ lst_idx ].mouse_start_x then
+				local pixel_steps = max_scroll_x / font.h
+				local diff = mouse.x - listbox_state[ lst_idx ].mouse_start_x
+				listbox_state[ lst_idx ].scroll_x = math.floor( diff / pixel_steps ) + listbox_state[ lst_idx ].old_scroll_x
+			end
+
+			if mouse.state == e_mouse_state.released and listbox_state[ lst_idx ].mouse_start_x then
+				listbox_state[ lst_idx ].mouse_start_x = nil
+				listbox_state[ lst_idx ].old_scroll_x = nil
+			end
+		end
+	end
+
 	-- Draw selected rect
 	local sel_idx = listbox_state[ lst_idx ].selected_idx
 	if sel_idx >= first and sel_idx <= last then
@@ -1290,7 +1353,7 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 			if scroll_x < cur_len then
 				final_str = utf8.sub( cur, scroll_x + 1, cur_len )
 			else
-				final_str = cur
+				final_str = nil
 			end
 		end
 
