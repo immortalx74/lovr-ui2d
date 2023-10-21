@@ -18,7 +18,6 @@ local separator_thickness = 2
 local windows = {}
 local color_themes = {}
 local overriden_colors = {}
-local custom_widgets = {}
 local listbox_state = {}
 local caret_blink = { prev = lovr.timer.getTime(), on = false }
 local font = { handle = nil, w = nil, h = nil }
@@ -151,8 +150,8 @@ local function WindowExists( id )
 	return false, 0
 end
 
-local function WidgetExists( id )
-	for i, v in ipairs( custom_widgets ) do
+local function WidgetExists( win, id )
+	for i, v in ipairs( win.cw ) do
 		if v.id == id then
 			return true, i
 		end
@@ -483,7 +482,8 @@ function UI2D.Begin( name, x, y, is_modal )
 			pass = nil,
 			is_hovered = false,
 			is_modal = is_modal or false,
-			was_called_this_frame = true
+			was_called_this_frame = true,
+			cw = {}
 		}
 		table.insert( windows, window )
 
@@ -590,6 +590,15 @@ function UI2D.End( main_pass )
 			cur_window.pass:setMaterial()
 			cur_window.pass:setColor( 1, 1, 1 )
 		end
+	end
+
+	-- Do custom widgets
+	for i, v in ipairs( cur_window.cw ) do
+		cur_window.pass:setColor( 1, 1, 1 )
+		cur_window.pass:setMaterial( v.texture )
+		cur_window.pass:plane( v.bbox.x + (v.bbox.w / 2), v.bbox.y + (v.bbox.h / 2), 0, v.bbox.w, v.bbox.h )
+		cur_window.pass:setMaterial()
+		cur_window.pass:setColor( 1, 1, 1 )
 	end
 
 	ResetLayout()
@@ -1367,58 +1376,60 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 	end
 end
 
--- NOTE need to rethink this one
--- function UI2D.CustomWidget( name, width, height )
--- 	local cur_window = windows[ begin_idx ]
--- 	local exists, idx = WidgetExists( cur_window.id .. name )
+function UI2D.CustomWidget( name, width, height )
+	local cur_window = windows[ begin_idx ]
+	local exists, idx = WidgetExists( cur_window, cur_window.id .. name )
 
--- 	if not exists then
--- 		local new_widget = {}
--- 		new_widget.id = cur_window.id .. name
--- 		new_widget.texture = lovr.graphics.newTexture( width, height )
--- 		new_widget.pass = lovr.graphics.newPass( new_widget.texture )
--- 		new_widget.pass:setProjection( 1, mat4():orthographic( new_widget.pass:getDimensions() ) )
--- 		table.insert( custom_widgets, new_widget )
--- 		idx = #custom_widgets
--- 	end
+	if not exists then
+		local new_widget = {}
+		new_widget.id = cur_window.id .. name
+		new_widget.texture = lovr.graphics.newTexture( width, height, texture_flags )
+		new_widget.pass = lovr.graphics.newPass( new_widget.texture )
+		new_widget.pass:setProjection( 1, mat4():orthographic( new_widget.pass:getDimensions() ) )
+		table.insert( cur_window.cw, new_widget )
+		idx = #cur_window.cw
+	end
 
--- 	local bbox = {}
--- 	if layout.same_line then
--- 		bbox = { x = layout.x + layout.w + margin, y = layout.y, w = width, h = height }
--- 	elseif layout.same_column then
--- 		bbox = { x = layout.x, y = layout.y + layout.h + margin, w = width, h = height }
--- 	else
--- 		bbox = { x = margin, y = layout.y + layout.row_h + margin, w = width, h = height }
--- 	end
+	local bbox = {}
+	if layout.same_line then
+		bbox = { x = layout.x + layout.w + margin, y = layout.y, w = width, h = height }
+	elseif layout.same_column then
+		bbox = { x = layout.x, y = layout.y + layout.h + margin, w = width, h = height }
+	else
+		bbox = { x = margin, y = layout.y + layout.row_h + margin, w = width, h = height }
+	end
 
--- 	UpdateLayout( bbox )
+	UpdateLayout( bbox )
 
--- 	local clicked = false
--- 	local held = false
--- 	local released = false
--- 	local hovered = false
+	local clicked = false
+	local held = false
+	local released = false
+	local hovered = false
 
--- 	if not modal_window or (modal_window and modal_window == cur_window) then
--- 		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) and cur_window == active_window then
--- 			hovered = true
+	if not modal_window or (modal_window and modal_window == cur_window) then
+		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) and cur_window == active_window then
+			hovered = true
 
--- 			if mouse.state == e_mouse_state.clicked then
--- 				clicked = true
--- 			end
+			if mouse.state == e_mouse_state.clicked then
+				clicked = true
+			end
 
--- 			if mouse.state == e_mouse_state.held then
--- 				held = true
--- 			end
+			if mouse.state == e_mouse_state.held then
+				held = true
+			end
 
--- 			if mouse.state == e_mouse_state.released then
--- 				released = true
--- 			end
--- 		end
--- 	end
+			if mouse.state == e_mouse_state.released then
+				released = true
+			end
+		end
+	end
 
--- 	table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = bbox, color = colors.button_border } )
--- 	return clicked, held, released, hovered, cur_window.x + bbox.x, cur_window.y + bbox.y, custom_widgets[ idx ].pass
--- end
+	cur_window.cw[ idx ].bbox = bbox
+	table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = bbox, color = colors.button_border } )
+	cur_window.cw[ idx ].pass:reset()
+	cur_window.cw[ idx ].pass:setProjection( 1, mat4():orthographic( cur_window.cw[ idx ].pass:getDimensions() ) )
+	return cur_window.cw[ idx ].pass, clicked, held, released, hovered, mouse.x - cur_window.x - bbox.x, mouse.y - cur_window.y - bbox.y
+end
 
 function UI2D.NewFrame( main_pass )
 	font.handle:setPixelDensity( 1.0 )
@@ -1454,6 +1465,9 @@ function UI2D.RenderFrame( main_pass )
 		v.command_list = nil
 		v.command_list = {}
 		v.was_called_this_frame = false
+		for j, k in ipairs( v.cw ) do
+			table.insert( passes, k.pass )
+		end
 		table.insert( passes, v.pass )
 	end
 	return passes

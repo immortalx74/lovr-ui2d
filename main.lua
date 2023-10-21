@@ -27,6 +27,33 @@ local some_list = { "fade", "wrong", "milky", "zinc", "doubt", "proud", "well-to
 	"industrious", "credit", "rice", "harm", "nifty", "boiling", "get", "volleyball",
 	"jobless", "honey", "piquant", "desire", "glossy", "spark", "hulking", "leg", "hurry" }
 
+local function DrawMyCustomWidget( ps, held, hovered, mx, my )
+	if held then
+		-- amplitude = (150 * my) / 300
+		-- frequency = (0.2 * mx) / 500
+		amplitude = (75 * my) / 150
+		frequency = (0.2 * mx) / 250
+	end
+
+	local col = { 0, 0, 0 }
+	if hovered then
+		col = { 0.1, 0, 0.2 }
+	end
+
+	ps:setClear( col )
+	ps:setColor( 1, 1, 1 )
+
+	local xx = 0
+	local yy = 0
+	local y = 75
+
+	for i = 1, 250 do
+		yy = y + (amplitude * math.sin( frequency * xx ))
+		ps:points( xx, yy, 0 )
+		xx = xx + 1
+	end
+end
+
 function lovr.load()
 	UI2D.Init()
 end
@@ -85,7 +112,7 @@ function lovr.draw( pass )
 	UI2D.Button( "second button2" )
 	UI2D.End( pass )
 
-	UI2D.Begin( "third", 800, 50 )
+	UI2D.Begin( "third", 950, 50 )
 	if UI2D.Button( "Open modal window" ) then
 		modal_window_open = true
 	end
@@ -98,7 +125,7 @@ function lovr.draw( pass )
 	UI2D.ResetColor( "button_bg" )
 	UI2D.Button( "blah3" )
 	UI2D.SameLine()
-	released, sl2 = UI2D.SliderInt( "hello", sl2, 0, 100 )
+	released, sl2 = UI2D.SliderInt( "int slider", sl2, 0, 100 )
 	UI2D.End( pass )
 
 	UI2D.OverrideColor( "window_bg", { 0.1, 0.2, 0.6 } )
@@ -114,11 +141,11 @@ function lovr.draw( pass )
 		check2 = not check2
 	end
 
-	released, sl3 = UI2D.SliderFloat( "hello", sl3, 0, 100, 300 )
+	released, sl3 = UI2D.SliderFloat( "float slider", sl3, 0, 100, 300 )
 	UI2D.End( pass )
 	UI2D.ResetColor( "window_bg" )
 
-	UI2D.Begin( "TabBar window", 350, 350 )
+	UI2D.Begin( "TabBar window", 300, 350 )
 	local was_clicked, idx = UI2D.TabBar( "my tab bar", { "first", "second", "third" }, tab_bar_idx )
 	if was_clicked then
 		tab_bar_idx = idx
@@ -136,6 +163,12 @@ function lovr.draw( pass )
 		UI2D.Label( "Label on 3rd tab" )
 		UI2D.Label( "awesome!" )
 	end
+	UI2D.End( pass )
+
+	UI2D.Begin( "Another window", 600, 50 )
+	UI2D.Label( "This is a custom widget" )
+	local ps, clicked, held, released, hovered, mx, my = UI2D.CustomWidget( "widget1", 250, 150 )
+	DrawMyCustomWidget( ps, held, hovered, mx, my )
 	UI2D.End( pass )
 
 	-- Modal window
