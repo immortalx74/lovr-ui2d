@@ -1143,7 +1143,7 @@ function UI2D.TextBox( name, num_visible_chars, text )
 				if active_widget == cur_window.id .. name then -- Deactivate self
 					active_textbox = nil
 					active_widget = nil
-					return text
+					return text, true
 				end
 			end
 		end
@@ -1152,7 +1152,7 @@ function UI2D.TextBox( name, num_visible_chars, text )
 			if lovr.system.wasKeyPressed( "tab" ) or lovr.system.wasKeyPressed( "return" ) then -- Deactivate self
 				active_textbox = nil
 				active_widget = nil
-				return text
+				return text, true
 			end
 		end
 	end
@@ -1167,7 +1167,7 @@ function UI2D.TextBox( name, num_visible_chars, text )
 		table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = caret_rect, color = colors.text } )
 	end
 
-	return text
+	return text, false
 end
 
 function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, selected )
@@ -1229,7 +1229,7 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 				listbox_state[ lst_idx ].scroll_x = listbox_state[ lst_idx ].scroll_x - mouse.wheel_x
 			end
 
-			if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w - sbt, bbox.h - sbt ) then -- content area
+			if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w - sbt, bbox.h - sbt ) and #collection > 0 then -- content area
 				highlight_idx = math.floor( (mouse.y - cur_window.y - bbox.y) / (font.h) ) + 1
 				highlight_idx = Clamp( highlight_idx, 1, #collection )
 
@@ -1305,7 +1305,6 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 			local max_dist = sb_vertical.h - v_thumb_height
 			local scroll_distance = MapRange( 0, max_scroll_y, 0, max_dist, scroll_y )
 			local thumb_vertical = { x = bbox.x + bbox.w - sbt, y = bbox.y + sbt + scroll_distance, w = sbt, h = v_thumb_height }
-			-- table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = thumb_vertical, color = colors.list_thumb } )
 
 			local col = colors.list_thumb
 			if PointInRect( mouse.x, mouse.y, thumb_vertical.x + cur_window.x, thumb_vertical.y + cur_window.y, sbt, thumb_vertical.h ) then
@@ -1319,7 +1318,7 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 			if mouse.state == e_mouse_state.held and listbox_state[ lst_idx ].mouse_start_y then
 				col = colors.list_thumb_click
 				local pixel_steps = max_scroll_y / font.h
-				local diff = (mouse.y - listbox_state[ lst_idx ].mouse_start_y)
+				local diff = mouse.y - listbox_state[ lst_idx ].mouse_start_y
 				listbox_state[ lst_idx ].scroll_y = math.floor( diff / pixel_steps ) + listbox_state[ lst_idx ].old_scroll_y
 			end
 
@@ -1337,9 +1336,10 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 			local max_dist = sb_horizontal.w - h_thumb_width
 			local scroll_distance = MapRange( 0, max_scroll_x, 0, max_dist, scroll_x )
 			local thumb_horizontal = { x = bbox.x + sbt + scroll_distance, y = bbox.y + bbox.h - sbt, w = h_thumb_width, h = sbt }
-			table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = thumb_horizontal, color = colors.list_thumb } )
 
+			local col = colors.list_thumb
 			if PointInRect( mouse.x, mouse.y, thumb_horizontal.x + cur_window.x, thumb_horizontal.y + cur_window.y, thumb_horizontal.w, sbt ) then
+				col = colors.list_thumb_hover
 				if mouse.state == e_mouse_state.clicked then
 					listbox_state[ lst_idx ].mouse_start_x = mouse.x
 					listbox_state[ lst_idx ].old_scroll_x = listbox_state[ lst_idx ].scroll_x
@@ -1347,6 +1347,7 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 			end
 
 			if mouse.state == e_mouse_state.held and listbox_state[ lst_idx ].mouse_start_x then
+				col = colors.list_thumb_click
 				local pixel_steps = max_scroll_x / font.h
 				local diff = mouse.x - listbox_state[ lst_idx ].mouse_start_x
 				listbox_state[ lst_idx ].scroll_x = math.floor( diff / pixel_steps ) + listbox_state[ lst_idx ].old_scroll_x
@@ -1356,6 +1357,8 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 				listbox_state[ lst_idx ].mouse_start_x = nil
 				listbox_state[ lst_idx ].old_scroll_x = nil
 			end
+
+			table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = thumb_horizontal, color = col } )
 		end
 	end
 
@@ -1397,6 +1400,8 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 		end
 		y_offset = y_offset + font.h
 	end
+
+	return result, listbox_state[ lst_idx ].selected_idx
 end
 
 function UI2D.CustomWidget( name, width, height )

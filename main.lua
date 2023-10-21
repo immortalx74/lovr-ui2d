@@ -13,7 +13,7 @@ local check1 = true
 local check2 = false
 local rb_idx = 1
 local progress = { value = 0, adder = 0 }
-local txt1 = "a textbox"
+local txt1 = "482.32"
 local txt2 = "a bigger textbox"
 local amplitude = 50
 local frequency = 0.1
@@ -29,8 +29,6 @@ local some_list = { "fade", "wrong", "milky", "zinc", "doubt", "proud", "well-to
 
 local function DrawMyCustomWidget( ps, held, hovered, mx, my )
 	if held then
-		-- amplitude = (150 * my) / 300
-		-- frequency = (0.2 * mx) / 500
 		amplitude = (75 * my) / 150
 		frequency = (0.2 * mx) / 250
 	end
@@ -105,11 +103,11 @@ function lovr.draw( pass )
 	if UI2D.Button( "Font size -" ) then
 		UI2D.SetFontSize( UI2D.GetFontSize() - 1 )
 	end
-	released, sl1 = UI2D.SliderInt( "another slider", sl1, 0, 100,296 )
+	released, sl1 = UI2D.SliderInt( "another slider", sl1, 0, 100, 296 )
 	if released then
 		print( released, sl1 )
 	end
-	UI2D.Label("Widgets on same line", true)
+	UI2D.Label( "Widgets on same line", true )
 	UI2D.Button( "Hello", 80 )
 	UI2D.SameLine()
 	UI2D.Button( "World!", 80 )
@@ -122,9 +120,10 @@ function lovr.draw( pass )
 	UI2D.OverrideColor( "button_bg", { 0.8, 0, 0.8 } )
 	UI2D.Button( "colored button" )
 
-	UI2D.ListBox( "list1", 15, 28, some_list )
-	-- UI2D.SameLine()
-	-- UI2D.ListBox( "list2", 15, 8, some_list )
+	local clicked, idx = UI2D.ListBox( "list1", 15, 28, some_list )
+	if clicked then
+		print( "selected item: " .. idx .. " - " .. some_list[ idx ] )
+	end
 	UI2D.ResetColor( "button_bg" )
 	UI2D.Button( "Click me" )
 	UI2D.SameLine()
@@ -135,7 +134,12 @@ function lovr.draw( pass )
 	UI2D.Begin( "Colored window", 600, 300 )
 	UI2D.Button( txt )
 	UI2D.SameLine()
-	txt1 = UI2D.TextBox( "textbox1", 11, txt1 )
+	txt1, finished_editing = UI2D.TextBox( "numeric textbox", 11, txt1 )
+	if finished_editing then
+		if type( tonumber( txt1 ) ) ~= "number" then
+			txt1 = "0"
+		end
+	end
 	txt2 = UI2D.TextBox( "textbox2", 25, txt2 )
 	if UI2D.CheckBox( "Really?", check1 ) then
 		check1 = not check1
