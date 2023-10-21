@@ -13,8 +13,8 @@ local check1 = true
 local check2 = false
 local rb_idx = 1
 local progress = { value = 0, adder = 0 }
-local txt1 = "Αυτό είναι utf8 κείμενο"
-local txt2 = "Another textbox"
+local txt1 = "a textbox"
+local txt2 = "a bigger textbox"
 local amplitude = 50
 local frequency = 0.1
 local modal_window_open = false
@@ -70,7 +70,7 @@ function lovr.draw( pass )
 	pass:setProjection( 1, mat4():orthographic( pass:getDimensions() ) )
 	UI2D.NewFrame( pass )
 
-	UI2D.Begin( "first", 50, 200 )
+	UI2D.Begin( "First Window", 50, 200 )
 	if UI2D.Button( "first button" ) then
 		print( "from 1st button" )
 	end
@@ -95,7 +95,7 @@ function lovr.draw( pass )
 	end
 	UI2D.End( pass )
 
-	UI2D.Begin( "second", 250, 50 )
+	UI2D.Begin( "Second Window", 250, 50 )
 	UI2D.Label( "We're doing progress...", true )
 	UI2D.ProgressBar( progress.value )
 	UI2D.Separator()
@@ -105,25 +105,28 @@ function lovr.draw( pass )
 	if UI2D.Button( "Font size -" ) then
 		UI2D.SetFontSize( UI2D.GetFontSize() - 1 )
 	end
-	released, sl1 = UI2D.SliderInt( "a slider", sl1, 0, 100 )
+	released, sl1 = UI2D.SliderInt( "another slider", sl1, 0, 100,296 )
 	if released then
 		print( released, sl1 )
 	end
-	UI2D.Button( "second button2" )
+	UI2D.Label("Widgets on same line", true)
+	UI2D.Button( "Hello", 80 )
+	UI2D.SameLine()
+	UI2D.Button( "World!", 80 )
 	UI2D.End( pass )
 
-	UI2D.Begin( "third", 950, 50 )
+	UI2D.Begin( "utf8 text support: ΞΔΠΘ", 950, 50 )
 	if UI2D.Button( "Open modal window" ) then
 		modal_window_open = true
 	end
 	UI2D.OverrideColor( "button_bg", { 0.8, 0, 0.8 } )
 	UI2D.Button( "colored button" )
 
-	UI2D.ListBox( "list1", 15, 24, some_list )
+	UI2D.ListBox( "list1", 15, 28, some_list )
 	-- UI2D.SameLine()
 	-- UI2D.ListBox( "list2", 15, 8, some_list )
 	UI2D.ResetColor( "button_bg" )
-	UI2D.Button( "blah3" )
+	UI2D.Button( "Click me" )
 	UI2D.SameLine()
 	released, sl2 = UI2D.SliderInt( "int slider", sl2, 0, 100 )
 	UI2D.End( pass )
@@ -133,11 +136,11 @@ function lovr.draw( pass )
 	UI2D.Button( txt )
 	UI2D.SameLine()
 	txt1 = UI2D.TextBox( "textbox1", 11, txt1 )
-	txt2 = UI2D.TextBox( "textbox2", 20, txt2 )
+	txt2 = UI2D.TextBox( "textbox2", 25, txt2 )
 	if UI2D.CheckBox( "Really?", check1 ) then
 		check1 = not check1
 	end
-	if UI2D.CheckBox( "Another check", check2 ) then
+	if UI2D.CheckBox( "Check me too", check2 ) then
 		check2 = not check2
 	end
 
@@ -145,7 +148,7 @@ function lovr.draw( pass )
 	UI2D.End( pass )
 	UI2D.ResetColor( "window_bg" )
 
-	UI2D.Begin( "TabBar window", 300, 350 )
+	UI2D.Begin( "TabBar window", 300, 370 )
 	local was_clicked, idx = UI2D.TabBar( "my tab bar", { "first", "second", "third" }, tab_bar_idx )
 	if was_clicked then
 		tab_bar_idx = idx
