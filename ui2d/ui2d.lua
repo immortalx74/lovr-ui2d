@@ -53,6 +53,11 @@ color_themes.dark =
 	list_highlight = { 0.3, 0.3, 0.3 },
 	list_track = { 0.08, 0.08, 0.08 },
 	list_thumb = { 0.36, 0.36, 0.36 },
+	list_thumb_hover = { 0.42, 0.42, 0.42 },
+	list_thumb_click = { 0.24, 0.24, 0.24 },
+	list_button = { 0.8, 0.8, 0.8 },
+	list_button_hover = { 1, 1, 1 },
+	list_button_click = { 0.5, 0.5, 0.5 },
 	textbox_bg = { 0.03, 0.03, 0.03 },
 	textbox_bg_hover = { 0.11, 0.11, 0.11 },
 	textbox_border = { 0.1, 0.1, 0.1 },
@@ -65,52 +70,53 @@ color_themes.dark =
 	progress_bar_bg = { 0.2, 0.2, 0.2 },
 	progress_bar_fill = { 0.3, 0.3, 1 },
 	progress_bar_border = { 0, 0, 0 },
-	osk_mode_bg = { 0, 0, 0 },
-	osk_highlight = { 1, 1, 1 },
 	modal_tint = { 0.3, 0.3, 0.3 },
 	separator = { 0, 0, 0 }
 }
 
 color_themes.light =
 {
+	text = { 0.02, 0.02, 0.02 },
+	window_bg = { 0.930, 0.930, 0.930 },
+	window_border = { 0.000, 0.000, 0.000 },
+	window_titlebar = { 0.8, 0.8, 0.8 },
+	window_titlebar_active = { 0.54, 0.54, 0.54 },
+	button_bg = { 0.800, 0.800, 0.800 },
+	button_bg_hover = { 0.900, 0.900, 0.900 },
+	button_bg_click = { 0.120, 0.120, 0.120 },
+	button_border = { 0.000, 0.000, 0.000 },
 	check_border = { 0.000, 0.000, 0.000 },
 	check_border_hover = { 0.760, 0.760, 0.760 },
-	textbox_bg_hover = { 0.570, 0.570, 0.570 },
-	textbox_border = { 0.000, 0.000, 0.000 },
-	text = { 0.120, 0.120, 0.120 },
-	button_bg_hover = { 0.900, 0.900, 0.900 },
-	radio_mark = { 0.172, 0.172, 0.172 },
-	slider_bg = { 0.830, 0.830, 0.830 },
-	progress_bar_fill = { 0.830, 0.830, 1.000 },
-	progress_bar_bg = { 1.000, 1.000, 1.000 },
-	tab_bar_highlight = { 0.151, 0.140, 1.000 },
-	tab_bar_hover = { 0.802, 0.797, 0.795 },
-	tab_bar_border = { 0.000, 0.000, 0.000 },
-	tab_bar_bg = { 1.000, 0.994, 0.999 },
-	image_button_border_highlight = { 0.500, 0.500, 0.500 },
-	textbox_bg = { 0.700, 0.700, 0.700 },
-	window_border = { 0.000, 0.000, 0.000 },
-	window_bg = { 0.930, 0.930, 0.930 },
-	window_titlebar = { 0.8, 0.8, 0.8 },
-	window_titlebar_active = { 0.9, 0.9, 0.9 },
-	button_bg = { 0.800, 0.800, 0.800 },
-	progress_bar_border = { 0.000, 0.000, 0.000 },
-	slider_bg_hover = { 0.870, 0.870, 0.870 },
-	slider_thumb = { 0.700, 0.700, 0.700 },
-	list_bg = { 0.877, 0.883, 0.877 },
-	list_border = { 0.000, 0.000, 0.000 },
-	list_selected = { 0.686, 0.687, 0.688 },
-	list_highlight = { 0.808, 0.810, 0.811 },
-	list_track = { 0.8, 0.8, 0.8 },
-	list_thumb = { 0.6, 0.6, 0.6 },
 	check_mark = { 0.000, 0.000, 0.000 },
 	radio_border = { 0.000, 0.000, 0.000 },
 	radio_border_hover = { 0.760, 0.760, 0.760 },
+	radio_mark = { 0.172, 0.172, 0.172 },
+	slider_bg = { 0.830, 0.830, 0.830 },
+	slider_bg_hover = { 0.870, 0.870, 0.870 },
+	slider_thumb = { 0.700, 0.700, 0.700 },
+	list_bg = { 0.9, 0.9, 0.9 },
+	list_border = { 0.000, 0.000, 0.000 },
+	list_selected = { 0.686, 0.687, 0.688 },
+	list_highlight = { 0.808, 0.810, 0.811 },
+	list_track = { 0.82, 0.82, 0.82 },
+	list_thumb = { 0.65, 0.65, 0.65 },
+	list_thumb_hover = { 0.72, 0.72, 0.72 },
+	list_thumb_click = { 0.58, 0.58, 0.58 },
+	list_button = { 0, 0, 0 },
+	list_button_hover = { 0.3, 0.3, 0.3 },
+	list_button_click = { 0.1, 0.1, 0.1 },
+	textbox_bg = { 0.700, 0.700, 0.700 },
+	textbox_bg_hover = { 0.570, 0.570, 0.570 },
+	textbox_border = { 0.000, 0.000, 0.000 },
 	textbox_border_focused = { 0.000, 0.000, 1.000 },
-	button_bg_click = { 0.120, 0.120, 0.120 },
-	button_border = { 0.000, 0.000, 0.000 },
-	osk_mode_bg = { 0.5, 0.5, 0.5 },
-	osk_highlight = { 0.1, 0.1, 0.1 },
+	image_button_border_highlight = { 0.500, 0.500, 0.500 },
+	tab_bar_bg = { 1.000, 0.994, 0.999 },
+	tab_bar_border = { 0.000, 0.000, 0.000 },
+	tab_bar_hover = { 0.802, 0.797, 0.795 },
+	tab_bar_highlight = { 0.151, 0.140, 1.000 },
+	progress_bar_bg = { 1.000, 1.000, 1.000 },
+	progress_bar_fill = { 0.830, 0.830, 1.000 },
+	progress_bar_border = { 0.000, 0.000, 0.000 },
 	modal_tint = { 0.15, 0.15, 0.15 },
 	separator = { 0.5, 0.5, 0.5 }
 }
@@ -1200,7 +1206,6 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 
 	UpdateLayout( bbox )
 
-	-- Draw scrollbars	
 	local sb_vertical = { x = bbox.x + bbox.w - sbt, y = bbox.y + sbt, w = sbt, h = bbox.h - (3 * sbt) }
 	local sb_horizontal = { x = bbox.x + sbt, y = bbox.y + bbox.h - sbt, w = bbox.w - (3 * sbt), h = sbt }
 	local sb_button_top = { x = bbox.x + bbox.w - sbt, y = bbox.y, w = sbt, h = sbt }
@@ -1208,20 +1213,15 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 	local sb_button_left = { x = bbox.x, y = bbox.y + bbox.h - sbt, w = sbt, h = sbt }
 	local sb_button_right = { x = bbox.x + bbox.w - (2 * sbt), y = bbox.y + bbox.h - sbt, w = sbt, h = sbt }
 
-	table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = bbox, color = colors.list_bg } )
-	table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = bbox, color = colors.list_border } )
-	table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = sb_vertical, color = colors.list_track } )
-	table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = sb_horizontal, color = colors.list_track } )
-	table.insert( windows[ begin_idx ].command_list, { type = "text", text = "△", bbox = sb_button_top, color = colors.text } )
-	table.insert( windows[ begin_idx ].command_list, { type = "text", text = "▽", bbox = sb_button_bottom, color = colors.text } )
-	table.insert( windows[ begin_idx ].command_list, { type = "text", text = "◁", bbox = sb_button_left, color = colors.text } )
-	table.insert( windows[ begin_idx ].command_list, { type = "text", text = "▷", bbox = sb_button_right, color = colors.text } )
-
 	local max_total_chars_x = GetLongerStringLen( collection )
 	local highlight_idx = nil
 	local result = false
 
 	-- Input for buttons and selection
+	local t_btn_col = colors.list_button
+	local b_btn_col = colors.list_button
+	local l_btn_col = colors.list_button
+	local r_btn_col = colors.list_button
 	if not modal_window or (modal_window and modal_window == cur_window) then
 		if cur_window == active_window then
 			if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) then -- whole listbox
@@ -1240,24 +1240,42 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 			elseif PointInRect( mouse.x, mouse.y, sb_vertical.x + cur_window.x, sb_vertical.y + cur_window.y, sbt, sb_vertical.h ) then -- v_scrollbar
 			elseif PointInRect( mouse.x, mouse.y, sb_horizontal.x + cur_window.x, sb_horizontal.y + cur_window.y, sb_horizontal.w, sbt ) then -- h_scrollbar
 			elseif PointInRect( mouse.x, mouse.y, sb_button_top.x + cur_window.x, sb_button_top.y + cur_window.y, sb_button_top.w, sbt ) then -- button top
+				t_btn_col = colors.list_button_hover
 				if mouse.state == e_mouse_state.clicked then
 					listbox_state[ lst_idx ].scroll_y = listbox_state[ lst_idx ].scroll_y - 1
+					t_btn_col = colors.list_button_click
 				end
 			elseif PointInRect( mouse.x, mouse.y, sb_button_bottom.x + cur_window.x, sb_button_bottom.y + cur_window.y, sb_button_bottom.w, sbt ) then -- button bottom
+				b_btn_col = colors.list_button_hover
 				if mouse.state == e_mouse_state.clicked then
 					listbox_state[ lst_idx ].scroll_y = listbox_state[ lst_idx ].scroll_y + 1
+					b_btn_col = colors.list_button_click
 				end
 			elseif PointInRect( mouse.x, mouse.y, sb_button_left.x + cur_window.x, sb_button_left.y + cur_window.y, sb_button_left.w, sbt ) then -- button left
+				l_btn_col = colors.list_button_hover
 				if mouse.state == e_mouse_state.clicked then
 					listbox_state[ lst_idx ].scroll_x = listbox_state[ lst_idx ].scroll_x - 1
+					l_btn_col = colors.list_button_click
 				end
 			elseif PointInRect( mouse.x, mouse.y, sb_button_right.x + cur_window.x, sb_button_right.y + cur_window.y, sb_button_right.w, sbt ) then -- button right
+				r_btn_col = colors.list_button_hover
 				if mouse.state == e_mouse_state.clicked then
 					listbox_state[ lst_idx ].scroll_x = listbox_state[ lst_idx ].scroll_x + 1
+					r_btn_col = colors.list_button_click
 				end
 			end
 		end
 	end
+
+	-- Draw scrollbars	
+	table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = bbox, color = colors.list_bg } )
+	table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = bbox, color = colors.list_border } )
+	table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = sb_vertical, color = colors.list_track } )
+	table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = sb_horizontal, color = colors.list_track } )
+	table.insert( windows[ begin_idx ].command_list, { type = "text", text = "△", bbox = sb_button_top, color = t_btn_col } )
+	table.insert( windows[ begin_idx ].command_list, { type = "text", text = "▽", bbox = sb_button_bottom, color = b_btn_col } )
+	table.insert( windows[ begin_idx ].command_list, { type = "text", text = "◁", bbox = sb_button_left, color = l_btn_col } )
+	table.insert( windows[ begin_idx ].command_list, { type = "text", text = "▷", bbox = sb_button_right, color = r_btn_col } )
 
 	local max_scroll_y = 0
 	if #collection > num_visible_rows then
@@ -1287,9 +1305,11 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 			local max_dist = sb_vertical.h - v_thumb_height
 			local scroll_distance = MapRange( 0, max_scroll_y, 0, max_dist, scroll_y )
 			local thumb_vertical = { x = bbox.x + bbox.w - sbt, y = bbox.y + sbt + scroll_distance, w = sbt, h = v_thumb_height }
-			table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = thumb_vertical, color = colors.list_thumb } )
+			-- table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = thumb_vertical, color = colors.list_thumb } )
 
+			local col = colors.list_thumb
 			if PointInRect( mouse.x, mouse.y, thumb_vertical.x + cur_window.x, thumb_vertical.y + cur_window.y, sbt, thumb_vertical.h ) then
+				col = colors.list_thumb_hover
 				if mouse.state == e_mouse_state.clicked then
 					listbox_state[ lst_idx ].mouse_start_y = mouse.y
 					listbox_state[ lst_idx ].old_scroll_y = listbox_state[ lst_idx ].scroll_y
@@ -1297,6 +1317,7 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 			end
 
 			if mouse.state == e_mouse_state.held and listbox_state[ lst_idx ].mouse_start_y then
+				col = colors.list_thumb_click
 				local pixel_steps = max_scroll_y / font.h
 				local diff = (mouse.y - listbox_state[ lst_idx ].mouse_start_y)
 				listbox_state[ lst_idx ].scroll_y = math.floor( diff / pixel_steps ) + listbox_state[ lst_idx ].old_scroll_y
@@ -1306,6 +1327,8 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 				listbox_state[ lst_idx ].mouse_start_y = nil
 				listbox_state[ lst_idx ].old_scroll_y = nil
 			end
+
+			table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = thumb_vertical, color = col } )
 		end
 
 		-- thumb horizontal
