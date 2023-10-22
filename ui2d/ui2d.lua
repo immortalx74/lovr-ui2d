@@ -705,8 +705,8 @@ end
 function UI2D.Button( name, width, height )
 	local text = GetLabelPart( name )
 	local cur_window = windows[ begin_idx ]
-	local text_w = utf8.len( name ) * font.w
-	local num_lines = GetLineCount( name )
+	local text_w = utf8.len( text ) * font.w
+	local num_lines = GetLineCount( text )
 
 	local bbox = {}
 	if layout.same_line then
@@ -868,11 +868,12 @@ end
 
 function UI2D.TabBar( name, tabs, idx )
 	local cur_window = windows[ begin_idx ]
-
 	local bbox = {}
 
 	if layout.same_line then
 		bbox = { x = layout.x + layout.w + margin, y = layout.y, w = 0, h = (2 * margin) + font.h }
+	elseif layout.same_column then
+		bbox = { x = layout.x, y = layout.y + layout.h + margin, w = 0, h = (2 * margin) + font.h }
 	else
 		bbox = { x = margin, y = layout.y + layout.row_h + margin, w = 0, h = (2 * margin) + font.h }
 	end
@@ -890,7 +891,7 @@ function UI2D.TabBar( name, tabs, idx )
 		if not modal_window or (modal_window and modal_window == cur_window) then
 			if PointInRect( mouse.x, mouse.y, x_off + cur_window.x, bbox.y + cur_window.y, tab_w, bbox.h ) and cur_window == active_window then
 				col = colors.tab_bar_hover
-				if mouse.state == e_mouse_state.clicked then
+				if mouse.state == e_mouse_state.clicked and cur_window.id .. name then
 					idx = i
 					result = true
 				end
@@ -905,8 +906,6 @@ function UI2D.TabBar( name, tabs, idx )
 		table.insert( windows[ begin_idx ].command_list, { type = "text", text = v, bbox = tab_rect, color = colors.text } )
 
 		if idx == i then
-			-- table.insert( windows[ begin_idx ].command_list,
-			-- 	{ type = "rect_fill", bbox = { x = tab_rect.x + 2, y = tab_rect.y + tab_rect.h - 6, w = tab_rect.w - 4, h = 5 }, color = colors.tab_bar_highlight } )
 			local highlight_thickness = math.floor( font.h / 4 )
 			table.insert( windows[ begin_idx ].command_list,
 				{
@@ -954,6 +953,8 @@ function UI2D.CheckBox( text, checked )
 	local bbox = {}
 	if layout.same_line then
 		bbox = { x = layout.x + layout.w + margin, y = layout.y, w = font.h + margin + text_w, h = (2 * margin) + font.h }
+	elseif layout.same_column then
+		bbox = { x = layout.x, y = layout.y + layout.h + margin, w = font.h + margin + text_w, h = (2 * margin) + font.h }
 	else
 		bbox = { x = margin, y = layout.y + layout.row_h + margin, w = font.h + margin + text_w, h = (2 * margin) + font.h }
 	end
@@ -991,6 +992,8 @@ function UI2D.RadioButton( text, checked )
 	local bbox = {}
 	if layout.same_line then
 		bbox = { x = layout.x + layout.w + margin, y = layout.y, w = font.h + margin + text_w, h = (2 * margin) + font.h }
+	elseif layout.same_column then
+		bbox = { x = layout.x, y = layout.y + layout.h + margin, w = font.h + margin + text_w, h = (2 * margin) + font.h }
 	else
 		bbox = { x = margin, y = layout.y + layout.row_h + margin, w = font.h + margin + text_w, h = (2 * margin) + font.h }
 	end
@@ -1024,11 +1027,14 @@ end
 
 function UI2D.TextBox( name, num_visible_chars, text )
 	local cur_window = windows[ begin_idx ]
-	local label_w = font.handle:getWidth( name )
+	local label = GetLabelPart( name )
+	local label_w = font.handle:getWidth( label )
 
 	local bbox = {}
 	if layout.same_line then
 		bbox = { x = layout.x + layout.w + margin, y = layout.y, w = (4 * margin) + (num_visible_chars * font.w) + label_w, h = (2 * margin) + font.h }
+	elseif layout.same_column then
+		bbox = { x = layout.x, y = layout.y + layout.h + margin, w = (4 * margin) + (num_visible_chars * font.w) + label_w, h = (2 * margin) + font.h  }
 	else
 		bbox = { x = margin, y = layout.y + layout.row_h + margin, w = (4 * margin) + (num_visible_chars * font.w) + label_w, h = (2 * margin) + font.h }
 	end
@@ -1164,7 +1170,7 @@ function UI2D.TextBox( name, num_visible_chars, text )
 	table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = text_rect, color = col1 } )
 	table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = text_rect, color = col2 } )
 	table.insert( windows[ begin_idx ].command_list, { type = "text", text = visible_text, bbox = char_rect, color = colors.text } )
-	table.insert( windows[ begin_idx ].command_list, { type = "text", text = name, bbox = label_rect, color = colors.text } )
+	table.insert( windows[ begin_idx ].command_list, { type = "text", text = label, bbox = label_rect, color = colors.text } )
 
 	if caret_rect and caret_blink.on then
 		table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = caret_rect, color = colors.text } )
