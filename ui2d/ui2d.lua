@@ -15,6 +15,7 @@ local begin_idx = nil
 local margin = 8
 local next_z = 0
 local separator_thickness = 2
+local begin_end_pairs = { b = 0, e = 0 }
 local windows = {}
 local color_themes = {}
 local overriden_colors = {}
@@ -508,6 +509,8 @@ function UI2D.Begin( name, x, y, is_modal )
 	if idx > 0 then
 		windows[ idx ].was_called_this_frame = true
 	end
+
+	begin_end_pairs.b = begin_end_pairs.b + 1
 end
 
 function UI2D.End( main_pass )
@@ -608,6 +611,7 @@ function UI2D.End( main_pass )
 	end
 
 	ResetLayout()
+	begin_end_pairs.e = begin_end_pairs.e + 1
 end
 
 function UI2D.SetWindowPosition( id, x, y )
@@ -1034,7 +1038,7 @@ function UI2D.TextBox( name, num_visible_chars, text )
 	if layout.same_line then
 		bbox = { x = layout.x + layout.w + margin, y = layout.y, w = (4 * margin) + (num_visible_chars * font.w) + label_w, h = (2 * margin) + font.h }
 	elseif layout.same_column then
-		bbox = { x = layout.x, y = layout.y + layout.h + margin, w = (4 * margin) + (num_visible_chars * font.w) + label_w, h = (2 * margin) + font.h  }
+		bbox = { x = layout.x, y = layout.y + layout.h + margin, w = (4 * margin) + (num_visible_chars * font.w) + label_w, h = (2 * margin) + font.h }
 	else
 		bbox = { x = margin, y = layout.y + layout.row_h + margin, w = (4 * margin) + (num_visible_chars * font.w) + label_w, h = (2 * margin) + font.h }
 	end
@@ -1449,15 +1453,16 @@ function UI2D.CustomWidget( name, width, height )
 
 			if mouse.state == e_mouse_state.clicked then
 				clicked = true
+				active_widget = cur_window.cw[ idx ]
 			end
+		end
 
-			if mouse.state == e_mouse_state.held then
-				held = true
-			end
-
-			if mouse.state == e_mouse_state.released then
-				released = true
-			end
+		if mouse.state == e_mouse_state.held and cur_window == active_window and active_widget == cur_window.cw[ idx ] then
+			held = true
+		end
+		if mouse.state == e_mouse_state.released and cur_window == active_window and active_widget == cur_window.cw[ idx ] then
+			released = true
+			active_widget = nil
 		end
 	end
 
@@ -1473,6 +1478,9 @@ function UI2D.NewFrame( main_pass )
 end
 
 function UI2D.RenderFrame( main_pass )
+	assert( begin_end_pairs.b == begin_end_pairs.e, "Begin/End pairs don't match! Begin calls: " .. begin_end_pairs.b .. " - End calls: " .. begin_end_pairs.e )
+	begin_end_pairs.b = 0
+	begin_end_pairs.e = 0
 	table.sort( windows, function( a, b ) return a.z > b.z end )
 
 	local count = #windows
