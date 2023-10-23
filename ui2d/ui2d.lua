@@ -10,6 +10,7 @@ local active_textbox = nil
 local dragged_window = nil
 local modal_window = nil
 local repeating_key = nil
+local pressed_key = nil
 local text_input_character = nil
 local begin_idx = nil
 local margin = 8
@@ -20,13 +21,20 @@ local windows = {}
 local color_themes = {}
 local overriden_colors = {}
 local listbox_state = {}
-local caret_blink = { prev = lovr.timer.getTime(), on = false }
+local caret_blink = { prev = love.timer.getTime(), on = false }
 local font = { handle = nil, w = nil, h = nil }
 local dragged_window_offset = { x = 0, y = 0 }
 local mouse = { x = 0, y = 0, state = e_mouse_state.idle, prev_frame = 0, this_frame = 0, wheel_x = 0, wheel_y = 0 }
-local texture_flags = { mipmaps = true, usage = { 'sample', 'render', 'transfer' } }
+local keys = {
+	[ "right" ] = { 0, 0, 0 },
+	[ "left" ] = { 0, 0, 0 },
+	[ "backspace" ] = { 0, 0, 0 },
+	[ "delete" ] = { 0, 0, 0 },
+	[ "tab" ] = { 0, 0, 0 },
+	[ "return" ] = { 0, 0, 0 },
+	[ "kpenter" ] = { 0, 0, 0 }
+}
 local layout = { x = 0, y = 0, w = 0, h = 0, row_h = 0, total_w = 0, total_h = 0, same_line = false, same_column = false }
-local clamp_sampler = lovr.graphics.newSampler( { wrap = 'clamp' } )
 
 color_themes.dark =
 {
@@ -324,12 +332,12 @@ function utf8.sub( s, i, j )
 	return string.sub( s, i, j )
 end
 
-function lovr.textinput( text, code )
-	text_input_character = text
+function love.textinput( t )
+	text_input_character = t
 end
 
-function lovr.keypressed( key, scancode, repeating )
-	if repeating then
+function love.keypressed( key, scancode, isrepeat )
+	if isrepeat then
 		if key == "right" then
 			repeating_key = "right"
 		elseif key == "left" then
@@ -342,13 +350,13 @@ function lovr.keypressed( key, scancode, repeating )
 	end
 end
 
-function lovr.keyreleased( key, scancode )
+function love.keyreleased( key, scancode )
 	repeating_key = nil
 end
 
-function lovr.wheelmoved( deltaX, deltaY )
-	mouse.wheel_x = deltaX
-	mouse.wheel_y = deltaY
+function love.wheelmoved( x, y )
+	mouse.wheel_x = x
+	mouse.wheel_y = y
 end
 
 -- -------------------------------------------------------------------------- --
@@ -358,20 +366,44 @@ function UI2D.Init( size )
 	local info = debug.getinfo( 1, "S" )
 	local lib_path = info.source:match( "@(.*[\\/])" )
 
-	font.handle = lovr.graphics.newFont( lib_path .. "DejaVuSansMono.ttf", size or 14, 4 )
-	font.handle:setPixelDensity( 1.0 )
+	font.handle = love.graphics.newFont( lib_path .. "DejaVuSansMono.ttf", size or 14 )
+	-- font.handle:setPixelDensity( 1.0 )
 	font.h = font.handle:getHeight()
 	font.w = font.handle:getWidth( "W" )
 	font.size = size or 14
-	lovr.system.setKeyRepeat( true )
+	love.keyboard.setKeyRepeat( true )
 
 	margin = math.floor( font.h / 2 )
 	separator_thickness = math.floor( font.h / 7 )
 end
 
 function UI2D.InputInfo()
+	-- Get keys
+	for i, v in pairs( keys ) do
+		if love.keyboard.isDown( i ) then
+			if v[ 1 ] == 0 then
+				v[ 1 ] = 1
+				v[ 2 ] = 1
+				v[ 3 ] = 1 -- pressed
+			else
+				v[ 1 ] = 1
+				v[ 2 ] = 0
+				v[ 3 ] = 2 -- held
+			end
+		else
+			if v[ 1 ] == 1 then
+				v[ 1 ] = 0
+				v[ 3 ] = 3 -- released
+			else
+				v[ 1 ] = 0
+				v[ 1 ] = 0
+				v[ 3 ] = 0 -- idle
+			end
+		end
+	end
+
 	-- Get mouse
-	if lovr.system.isMouseDown( 1 ) then
+	if love.mouse.isDown( 1 ) then
 		if mouse.prev_frame == 0 then
 			mouse.prev_frame = 1
 			mouse.this_frame = 1
@@ -390,7 +422,7 @@ function UI2D.InputInfo()
 		end
 	end
 
-	mouse.x, mouse.y = lovr.system.getMousePosition()
+	mouse.x, mouse.y = love.mouse.getPosition()
 
 	-- Set active window on click
 	local hovers_active = false
@@ -445,7 +477,7 @@ function UI2D.InputInfo()
 			if mouse.state == e_mouse_state.held then
 				local mx         = mouse.x
 				local my         = mouse.y
-				local w, h       = lovr.system.getWindowDimensions()
+				local w, h       = love.window.getMode()
 				mx               = Clamp( mx, 10, w - 10 )
 				my               = Clamp( my, 10, h - 10 )
 				dragged_window.x = mx - dragged_window_offset.x
@@ -458,7 +490,7 @@ function UI2D.InputInfo()
 		dragged_window = nil
 	end
 
-	local now = lovr.timer.getTime()
+	local now = love.timer.getTime()
 	if now > caret_blink.prev + 0.4 then
 		caret_blink.on = true
 	end
@@ -486,7 +518,6 @@ function UI2D.Begin( name, x, y, is_modal )
 			texture = nil,
 			texture_w = 0,
 			texture_h = 0,
-			pass = nil,
 			is_hovered = false,
 			is_modal = is_modal or false,
 			was_called_this_frame = true,
@@ -513,7 +544,7 @@ function UI2D.Begin( name, x, y, is_modal )
 	begin_end_pairs.b = begin_end_pairs.b + 1
 end
 
-function UI2D.End( main_pass )
+function UI2D.End()
 	local cur_window = windows[ begin_idx ]
 	cur_window.w = layout.total_w
 	cur_window.h = layout.total_h
@@ -525,22 +556,18 @@ function UI2D.End( main_pass )
 			cur_window.texture:release()
 			cur_window.texture_w = cur_window.w
 			cur_window.texture_h = cur_window.h
-			cur_window.texture = lovr.graphics.newTexture( cur_window.w, cur_window.h, texture_flags )
-			cur_window.pass:setCanvas( cur_window.texture )
+			cur_window.texture = love.graphics.newCanvas( cur_window.w, cur_window.h )
+			love.graphics.setCanvas( cur_window.texture )
 		end
 	else
-		cur_window.texture = lovr.graphics.newTexture( cur_window.w, cur_window.h, texture_flags )
+		cur_window.texture = love.graphics.newCanvas( cur_window.w, cur_window.h )
 		cur_window.texture_w = cur_window.w
 		cur_window.texture_h = cur_window.h
-		cur_window.pass = lovr.graphics.newPass( cur_window.texture )
 	end
 
-	cur_window.pass:reset()
-	cur_window.pass:setFont( font.handle )
-	cur_window.pass:setDepthTest( nil )
-	cur_window.pass:setProjection( 1, mat4():orthographic( cur_window.pass:getDimensions() ) )
-	cur_window.pass:setColor( colors.window_bg )
-	cur_window.pass:fill()
+	love.graphics.setCanvas( cur_window.texture )
+	love.graphics.setFont( font.handle )
+	love.graphics.clear( colors.window_bg )
 
 	-- Title bar and border
 	local title_col = colors.window_titlebar
@@ -568,47 +595,42 @@ function UI2D.End( main_pass )
 	for i, v in ipairs( cur_window.command_list ) do
 		if v.type == "rect_fill" then
 			if v.is_separator then
-				cur_window.pass:setColor( v.color )
-				cur_window.pass:plane( v.bbox.x + (cur_window.w / 2), v.bbox.y, 0, cur_window.w - (2 * margin), separator_thickness, 0, 0, 0, 0, "fill" )
+				love.graphics.setColor( v.color )
+				love.graphics.rectangle( "fill", v.bbox.x + margin, v.bbox.y, cur_window.w - (2 * margin), separator_thickness )
 			else
-				cur_window.pass:setColor( v.color )
-				cur_window.pass:plane( v.bbox.x + (v.bbox.w / 2), v.bbox.y + (v.bbox.h / 2), 0, v.bbox.w, v.bbox.h, 0, 0, 0, 0, "fill" )
+				love.graphics.setColor( v.color )
+				love.graphics.rectangle( "fill", v.bbox.x, v.bbox.y, v.bbox.w, v.bbox.h )
 			end
 		elseif v.type == "rect_wire" then
-			local m = lovr.math.newMat4( vec3( v.bbox.x + (v.bbox.w / 2), v.bbox.y + (v.bbox.h / 2), 0 ), vec3( v.bbox.w, v.bbox.h, 0 ) )
-			cur_window.pass:setColor( v.color )
-			cur_window.pass:plane( m, "line" )
+			love.graphics.setColor( v.color )
+			love.graphics.rectangle( "line", v.bbox.x, v.bbox.y, v.bbox.w, v.bbox.h )
 		elseif v.type == "circle_wire" then
-			local m = lovr.math.newMat4( vec3( v.bbox.x + (v.bbox.w / 2), v.bbox.y + (v.bbox.h / 2), 0 ), vec3( v.bbox.w / 2, v.bbox.h / 2, 0 ) )
-			cur_window.pass:setColor( v.color )
-			cur_window.pass:circle( m, "line" )
+			love.graphics.setColor( v.color )
+			love.graphics.circle( "line", v.bbox.x + (v.bbox.w / 2), v.bbox.y + (v.bbox.h / 2), v.bbox.w / 2 )
 		elseif v.type == "circle_fill" then
-			local m = lovr.math.newMat4( vec3( v.bbox.x + (v.bbox.w / 2), v.bbox.y + (v.bbox.h / 2), 0 ), vec3( v.bbox.w / 3, v.bbox.h / 3, 0 ) )
-			cur_window.pass:setColor( v.color )
-			cur_window.pass:circle( m, "fill" )
+			love.graphics.setColor( v.color )
+			love.graphics.circle( "fill", v.bbox.x + (v.bbox.w / 2), v.bbox.y + (v.bbox.h / 2), v.bbox.w / 4 )
 		elseif v.type == "text" then
-			cur_window.pass:setColor( v.color )
-			cur_window.pass:text( v.text, vec3( v.bbox.x + (v.bbox.w / 2), v.bbox.y + (v.bbox.h / 2), 0 ) )
+			love.graphics.setColor( v.color )
+			local text_w = font.handle:getWidth( v.text )
+			local posx = (v.bbox.x + (v.bbox.w - text_w) / 2)
+			local posy = (v.bbox.y + (v.bbox.h - font.h) / 2)
+			love.graphics.print( v.text, posx, posy )
 		elseif v.type == "image" then
-			-- NOTE Temp fix. Had to do negative vertical scale. Otherwise image gets flipped?
-			local m = lovr.math.newMat4( vec3( v.bbox.x + (v.bbox.w / 2), v.bbox.y + (v.bbox.h / 2), 0 ), vec3( v.bbox.w, -v.bbox.h, 0 ) )
-			cur_window.pass:setColor( v.color )
-			cur_window.pass:setMaterial( v.texture )
-			cur_window.pass:setSampler( clamp_sampler )
-			cur_window.pass:plane( m, "fill" )
-			cur_window.pass:setMaterial()
-			cur_window.pass:setColor( 1, 1, 1 )
+			love.graphics.setColor( v.color )
+			love.graphics.draw( v.texture, v.bbox.x, v.bbox.y, 0, v.bbox.w / v.image_w, v.bbox.h / v.image_h )
 		end
 	end
 
 	-- Do custom widgets
-	for i, v in ipairs( cur_window.cw ) do
-		cur_window.pass:setColor( 1, 1, 1 )
-		cur_window.pass:setMaterial( v.texture )
-		cur_window.pass:plane( v.bbox.x + (v.bbox.w / 2), v.bbox.y + (v.bbox.h / 2), 0, v.bbox.w, v.bbox.h )
-		cur_window.pass:setMaterial()
-		cur_window.pass:setColor( 1, 1, 1 )
-	end
+	-- for i, v in ipairs( cur_window.cw ) do
+	-- 	love.graphics.setColor( 1, 1, 1 )
+	-- 	cur_window.pass:setMaterial( v.texture )
+	-- 	cur_window.pass:plane( v.bbox.x + (v.bbox.w / 2), v.bbox.y + (v.bbox.h / 2), 0, v.bbox.w, v.bbox.h )
+	-- 	cur_window.pass:setMaterial()
+	-- 	love.graphics.setColor( 1, 1, 1 )
+	-- end
+
 
 	ResetLayout()
 	begin_end_pairs.e = begin_end_pairs.e + 1
@@ -680,8 +702,8 @@ function UI2D.SetFontSize( size )
 	local info = debug.getinfo( 1, "S" )
 	local lib_path = info.source:match( "@(.*[\\/])" )
 
-	font.handle = lovr.graphics.newFont( lib_path .. "DejaVuSansMono.ttf", size, 4 )
-	font.handle:setPixelDensity( 1.0 )
+	font.handle = love.graphics.newFont( lib_path .. "DejaVuSansMono.ttf", size )
+	-- font.handle:setPixelDensity( 1.0 )
 	font.h = font.handle:getHeight()
 	font.w = font.handle:getWidth( "W" )
 	font.size = size
@@ -847,13 +869,22 @@ function UI2D.ImageButton( texture, width, height, text )
 		end
 	end
 
+	local original_w = texture:getWidth()
+	local original_h = texture:getHeight()
 	if text then
 		table.insert( windows[ begin_idx ].command_list,
-			{ type = "image", bbox = { x = bbox.x, y = bbox.y + ((bbox.h - height) / 2), w = width, h = height }, texture = texture, color = { col, col, col } } )
+			{
+				type = "image",
+				bbox = { x = bbox.x, y = bbox.y + ((bbox.h - height) / 2), w = width, h = height },
+				texture = texture,
+				image_w = original_w,
+				image_h = original_h,
+				color = { col, col, col }
+			} )
 		table.insert( windows[ begin_idx ].command_list,
 			{ type = "text", text = text, bbox = { x = bbox.x + width, y = bbox.y, w = text_w + (2 * margin), h = bbox.h }, color = colors.text } )
 	else
-		table.insert( windows[ begin_idx ].command_list, { type = "image", bbox = bbox, texture = texture, color = { col, col, col } } )
+		table.insert( windows[ begin_idx ].command_list, { type = "image", bbox = bbox, texture = texture, image_w = original_w, image_h = original_h, color = { col, col, col } } )
 	end
 
 	return result
@@ -1074,7 +1105,7 @@ function UI2D.TextBox( name, num_visible_chars, text )
 			end
 		end
 
-		if lovr.system.wasKeyPressed( "backspace" ) or repeating_key == "backspace" then
+		if keys[ "backspace" ][ 3 ] == 1 or repeating_key == "backspace" then
 			if active_textbox.caret > 0 then
 				local p = active_textbox.caret + active_textbox.scroll
 				local part1 = utf8.sub( text, 1, p - 1 )
@@ -1088,7 +1119,7 @@ function UI2D.TextBox( name, num_visible_chars, text )
 			end
 		end
 
-		if lovr.system.wasKeyPressed( "delete" ) or repeating_key == "delete" then
+		if keys[ "delete" ][ 3 ] == 1 or repeating_key == "delete" then
 			if active_textbox.caret < num_visible_chars and active_textbox.caret < utf8.len( text ) then
 				local p = active_textbox.caret + active_textbox.scroll
 				local part1 = utf8.sub( text, 1, p )
@@ -1102,7 +1133,7 @@ function UI2D.TextBox( name, num_visible_chars, text )
 			end
 		end
 
-		if lovr.system.wasKeyPressed( "left" ) or repeating_key == "left" then
+		if keys[ "left" ][ 3 ] == 1 or repeating_key == "left" then
 			if active_textbox.caret == 0 then
 				if active_textbox.scroll > 0 then
 					active_textbox.scroll = active_textbox.scroll - 1
@@ -1111,7 +1142,7 @@ function UI2D.TextBox( name, num_visible_chars, text )
 			active_textbox.caret = active_textbox.caret - 1
 		end
 
-		if lovr.system.wasKeyPressed( "right" ) or repeating_key == "right" then
+		if keys[ "right" ][ 3 ] == 1 or repeating_key == "right" then
 			local full_length = utf8.len( text )
 			local visible_length = utf8.len( visible_text )
 			if active_textbox.caret == num_visible_chars and full_length > num_visible_chars and active_textbox.scroll < (full_length - visible_length) then
@@ -1162,7 +1193,7 @@ function UI2D.TextBox( name, num_visible_chars, text )
 		end
 
 		if active_widget == cur_window.id .. name then
-			if lovr.system.wasKeyPressed( "tab" ) or lovr.system.wasKeyPressed( "return" ) then -- Deactivate self
+			if keys[ "tab" ][ 3 ] == 1 or keys[ "return" ][ 3 ] == 1 or keys[ "kpenter" ][ 3 ] == 1 then -- Deactivate self
 				active_textbox = nil
 				active_widget = nil
 				return text, true
@@ -1424,9 +1455,7 @@ function UI2D.CustomWidget( name, width, height )
 	if not exists then
 		local new_widget = {}
 		new_widget.id = cur_window.id .. name
-		new_widget.texture = lovr.graphics.newTexture( width, height, texture_flags )
-		new_widget.pass = lovr.graphics.newPass( new_widget.texture )
-		new_widget.pass:setProjection( 1, mat4():orthographic( new_widget.pass:getDimensions() ) )
+		new_widget.texture = love.graphics.newCanvas( width, height )
 		table.insert( cur_window.cw, new_widget )
 		idx = #cur_window.cw
 	end
@@ -1468,33 +1497,30 @@ function UI2D.CustomWidget( name, width, height )
 
 	cur_window.cw[ idx ].bbox = bbox
 	table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = bbox, color = colors.button_border } )
-	cur_window.cw[ idx ].pass:reset()
-	cur_window.cw[ idx ].pass:setProjection( 1, mat4():orthographic( cur_window.cw[ idx ].pass:getDimensions() ) )
-	return cur_window.cw[ idx ].pass, clicked, held, released, hovered, mouse.x - cur_window.x - bbox.x, mouse.y - cur_window.y - bbox.y
+	return cur_window.cw[ idx ].texture, clicked, held, released, hovered, mouse.x - cur_window.x - bbox.x, mouse.y - cur_window.y - bbox.y
 end
 
 function UI2D.NewFrame( main_pass )
-	font.handle:setPixelDensity( 1.0 )
+	-- font.handle:setPixelDensity( 1.0 )
 end
 
-function UI2D.RenderFrame( main_pass )
+function UI2D.RenderFrame()
 	assert( begin_end_pairs.b == begin_end_pairs.e, "Begin/End pairs don't match! Begin calls: " .. begin_end_pairs.b .. " - End calls: " .. begin_end_pairs.e )
 	begin_end_pairs.b = 0
 	begin_end_pairs.e = 0
 	table.sort( windows, function( a, b ) return a.z > b.z end )
+	love.graphics.setCanvas()
 
 	local count = #windows
 	for i = count, 1, -1 do
 		local win = windows[ i ]
 
 		if win.was_called_this_frame then
-			main_pass:setColor( 1, 1, 1 )
+			love.graphics.setColor( 1, 1, 1 )
 			if modal_window and win ~= modal_window then
-				main_pass:setColor( colors.modal_tint )
+				love.graphics.setColor( colors.modal_tint )
 			end
-			main_pass:setMaterial( win.texture )
-			main_pass:plane( win.x + (win.w / 2), win.y + (win.h / 2), 0, win.w, -win.h ) --NOTE flip Y fix
-			main_pass:setMaterial()
+			love.graphics.draw( win.texture, win.x, win.y )
 		else
 			table.remove( windows, i )
 		end
@@ -1504,18 +1530,16 @@ function UI2D.RenderFrame( main_pass )
 	mouse.wheel_y = 0
 
 	text_input_character = nil
-	local passes = {}
 
 	for i, v in ipairs( windows ) do
 		v.command_list = nil
 		v.command_list = {}
 		v.was_called_this_frame = false
+
 		for j, k in ipairs( v.cw ) do
-			table.insert( passes, k.pass )
+			love.graphics.draw( k.texture, v.x + k.bbox.x, v.y + k.bbox.y )
 		end
-		table.insert( passes, v.pass )
 	end
-	return passes
 end
 
 return UI2D

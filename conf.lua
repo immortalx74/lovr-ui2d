@@ -1,8 +1,7 @@
-function lovr.conf( t )
-	t.headset = false
-	-- t.headset.drivers = {'desktop'}
-	-- t.graphics.debug = true
-	t.window.resizable = true
+function love.conf( t )
 	t.window.width = 1300
 	t.window.height = 600
+	t.window.resizable = true
+	t.console = true
+	t.modules.joystick = false
 end
