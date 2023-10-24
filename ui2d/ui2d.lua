@@ -404,6 +404,11 @@ function UI2D.InputInfo()
 		end
 	end
 
+	if modal_window then
+		active_window = modal_window
+		hovers_active = false
+	end
+
 	local z = 0
 	local win = nil
 	if not hovers_active then
@@ -416,14 +421,10 @@ function UI2D.InputInfo()
 			end
 		end
 
-		if modal_window then
-			active_window = modal_window
-		else
-			if win then
-				next_z = next_z + 0.01
-				win.z = next_z
-				active_window = win
-			end
+		if win and not modal_window then
+			next_z = next_z + 0.01
+			win.z = next_z
+			active_window = win
 		end
 	end
 
