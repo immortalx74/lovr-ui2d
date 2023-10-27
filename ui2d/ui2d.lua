@@ -1415,6 +1415,10 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 		y_offset = y_offset + font.h
 	end
 
+	if #collection > 0 then
+		listbox_state[ lst_idx ].selected_idx = Clamp( listbox_state[ lst_idx ].selected_idx, 0, #collection )
+	end
+
 	return result, listbox_state[ lst_idx ].selected_idx
 end
 
