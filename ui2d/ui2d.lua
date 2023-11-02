@@ -1,6 +1,6 @@
 local utf8 = require "utf8"
 local UI2D = {}
-
+local has_text_input = false
 local e_mouse_state = { clicked = 1, held = 2, released = 3, idle = 4 }
 local e_slider_type = { int = 1, float = 2 }
 local modal_window = nil
@@ -318,9 +318,16 @@ local function Slider( type, name, v, v_min, v_max, width )
 	return result, v
 end
 
+-- function utf8.sub( s, i, j )
+-- 	i = utf8.offset( s, i )
+-- 	j = utf8.offset( s, j + 1 ) - 1
+-- 	return string.sub( s, i, j )
+-- end
+
 function utf8.sub( s, i, j )
-	i = utf8.offset( s, i )
-	j = utf8.offset( s, j + 1 ) - 1
+	i = utf8.offset( s, i ) or 1
+	local nextOffset = utf8.offset( s, j + 1 )
+	j = (nextOffset and nextOffset - 1) or #tostring( s )
 	return string.sub( s, i, j )
 end
 
@@ -431,6 +438,7 @@ function UI2D.InputInfo()
 	-- Set active to none
 	if not hovers_any and mouse.state == e_mouse_state.clicked then
 		active_window = nil
+		has_text_input = false
 	end
 
 	-- Handle window dragging
@@ -693,6 +701,10 @@ end
 
 function UI2D.GetFontSize()
 	return font.size
+end
+
+function UI2D.HasTextInput()
+	return has_text_input
 end
 
 function UI2D.EndModalWindow()
@@ -1139,6 +1151,7 @@ function UI2D.TextBox( name, num_visible_chars, text )
 			col1 = colors.textbox_bg_hover
 
 			if mouse.state == e_mouse_state.clicked then
+				has_text_input = true
 				local pos = math.floor( (mouse.x - cur_window.x - text_rect.x) / font.w )
 				if pos > utf8.len( text ) then
 					pos = utf8.len( text )
@@ -1155,6 +1168,7 @@ function UI2D.TextBox( name, num_visible_chars, text )
 		else
 			if mouse.state == e_mouse_state.clicked then
 				if active_widget == cur_window.id .. name then -- Deactivate self
+					has_text_input = false
 					active_textbox = nil
 					active_widget = nil
 					return text, true
@@ -1164,13 +1178,13 @@ function UI2D.TextBox( name, num_visible_chars, text )
 
 		if active_widget == cur_window.id .. name then
 			if lovr.system.wasKeyPressed( "tab" ) or lovr.system.wasKeyPressed( "return" ) then -- Deactivate self
+				has_text_input = false
 				active_textbox = nil
 				active_widget = nil
 				return text, true
 			end
 		end
 	end
-
 
 	table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = text_rect, color = col1 } )
 	table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = text_rect, color = col2 } )
@@ -1184,12 +1198,26 @@ function UI2D.TextBox( name, num_visible_chars, text )
 	return text, false
 end
 
-function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, selected )
+function UI2D.ListBoxSetSelected( name, idx )
+	local exists, lst_idx = ListBoxExists( name )
+	if exists then
+		if type( idx ) == "table" then
+			listbox_state[ lst_idx ].selection = {}
+			for i, v in ipairs( idx ) do
+				table.insert( listbox_state[ lst_idx ].selection, v )
+			end
+		else
+			listbox_state[ lst_idx ].selected_idx = idx
+		end
+	end
+end
+
+function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, selected, multi_select )
 	local cur_window = windows[ begin_idx ]
 	local exists, lst_idx = ListBoxExists( cur_window.id .. name )
 
 	if not exists then
-		local selected_idx = 1
+		local selected_idx = 0
 		if type( selected ) == "number" then
 			selected_idx = selected
 		elseif type( selected ) == "string" then
@@ -1200,7 +1228,10 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 				end
 			end
 		end
-		local lb = { id = cur_window.id .. name, selected_idx = selected_idx, scroll_x = 0, scroll_y = 0 }
+		local lb = { id = cur_window.id .. name, selected_idx = selected_idx, scroll_x = 0, scroll_y = 0, selection = {} }
+		if selected_idx > 0 then
+			table.insert( lb.selection, selected_idx )
+		end
 		table.insert( listbox_state, lb )
 	end
 
@@ -1250,6 +1281,27 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 				if mouse.state == e_mouse_state.clicked then
 					listbox_state[ lst_idx ].selected_idx = highlight_idx + listbox_state[ lst_idx ].scroll_y
 					result = true
+					if multi_select then
+						if lovr.system.isKeyDown( "lctrl" ) then
+							local exists = false
+							local idx = 0
+							for i, v in ipairs( listbox_state[ lst_idx ].selection ) do
+								if v == listbox_state[ lst_idx ].selected_idx then
+									idx = i
+									exists = true
+									break
+								end
+							end
+							if not exists then
+								table.insert( listbox_state[ lst_idx ].selection, listbox_state[ lst_idx ].selected_idx )
+							else
+								table.remove( listbox_state[ lst_idx ].selection, idx )
+							end
+						else
+							listbox_state[ lst_idx ].selection = {}
+							table.insert( listbox_state[ lst_idx ].selection, listbox_state[ lst_idx ].selected_idx )
+						end
+					end
 				end
 			elseif PointInRect( mouse.x, mouse.y, sb_vertical.x + cur_window.x, sb_vertical.y + cur_window.y, sbt, sb_vertical.h ) then -- v_scrollbar
 			elseif PointInRect( mouse.x, mouse.y, sb_horizontal.x + cur_window.x, sb_horizontal.y + cur_window.y, sb_horizontal.w, sbt ) then -- h_scrollbar
@@ -1377,10 +1429,20 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 	end
 
 	-- Draw selected rect
-	local sel_idx = listbox_state[ lst_idx ].selected_idx
-	if sel_idx >= first and sel_idx <= last then
-		local selected_rect = { x = bbox.x, y = bbox.y + (sel_idx - scroll_y - 1) * font.h, w = bbox.w - sbt, h = font.h }
-		table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = selected_rect, color = colors.list_selected } )
+	if multi_select then
+		for i, v in ipairs( listbox_state[ lst_idx ].selection ) do
+			local sel_idx = v
+			if sel_idx >= first and sel_idx <= last then
+				local selected_rect = { x = bbox.x, y = bbox.y + (sel_idx - scroll_y - 1) * font.h, w = bbox.w - sbt, h = font.h }
+				table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = selected_rect, color = colors.list_selected } )
+			end
+		end
+	else
+		local sel_idx = listbox_state[ lst_idx ].selected_idx
+		if sel_idx >= first and sel_idx <= last then
+			local selected_rect = { x = bbox.x, y = bbox.y + (sel_idx - scroll_y - 1) * font.h, w = bbox.w - sbt, h = font.h }
+			table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = selected_rect, color = colors.list_selected } )
+		end
 	end
 
 	-- Draw highlight rect
@@ -1418,8 +1480,11 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 	if #collection > 0 then
 		listbox_state[ lst_idx ].selected_idx = Clamp( listbox_state[ lst_idx ].selected_idx, 0, #collection )
 	end
-
-	return result, listbox_state[ lst_idx ].selected_idx
+	local t = {}
+	if multi_select then
+		t = listbox_state[ lst_idx ].selection
+	end
+	return result, listbox_state[ lst_idx ].selected_idx, t
 end
 
 function UI2D.CustomWidget( name, width, height )
