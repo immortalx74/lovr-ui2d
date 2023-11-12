@@ -10,7 +10,6 @@ local active_window = nil
 local active_widget = nil
 local active_textbox = nil
 local dragged_window = nil
-local modal_window = nil
 local repeating_key = nil
 local text_input_character = nil
 local begin_idx = nil
