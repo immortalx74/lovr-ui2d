@@ -1,6 +1,8 @@
 local utf8 = require "utf8"
+
 local UI2D = {}
 local has_text_input = false
+local has_mouse = false
 local e_mouse_state = { clicked = 1, held = 2, released = 3, idle = 4 }
 local e_slider_type = { int = 1, float = 2 }
 local modal_window = nil
@@ -318,12 +320,6 @@ local function Slider( type, name, v, v_min, v_max, width )
 	return result, v
 end
 
--- function utf8.sub( s, i, j )
--- 	i = utf8.offset( s, i )
--- 	j = utf8.offset( s, j + 1 ) - 1
--- 	return string.sub( s, i, j )
--- end
-
 function utf8.sub( s, i, j )
 	i = utf8.offset( s, i ) or 1
 	local nextOffset = utf8.offset( s, j + 1 )
@@ -361,6 +357,7 @@ end
 -- -------------------------------------------------------------------------- --
 --                                User                                        --
 -- -------------------------------------------------------------------------- --
+
 function UI2D.Init( size )
 	local info = debug.getinfo( 1, "S" )
 	local lib_path = info.source:match( "@(.*[\\/])" )
@@ -408,6 +405,7 @@ function UI2D.InputInfo()
 				hovers_active = true
 			end
 			hovers_any = true
+			has_mouse = true
 		end
 	end
 
@@ -439,6 +437,11 @@ function UI2D.InputInfo()
 	if not hovers_any and mouse.state == e_mouse_state.clicked then
 		active_window = nil
 		has_text_input = false
+	end
+
+	-- Give back mouse
+	if not hovers_any then
+		has_mouse = false
 	end
 
 	-- Handle window dragging
@@ -614,13 +617,22 @@ function UI2D.End( main_pass )
 	for i, v in ipairs( cur_window.cw ) do
 		cur_window.pass:setColor( 1, 1, 1 )
 		cur_window.pass:setMaterial( v.texture )
-		cur_window.pass:plane( v.bbox.x + (v.bbox.w / 2), v.bbox.y + (v.bbox.h / 2), 0, v.bbox.w, v.bbox.h )
+		cur_window.pass:plane( v.bbox.x + (v.bbox.w / 2), v.bbox.y + (v.bbox.h / 2), 0, v.bbox.w, -v.bbox.h )
 		cur_window.pass:setMaterial()
 		cur_window.pass:setColor( 1, 1, 1 )
 	end
 
 	ResetLayout()
 	begin_end_pairs.e = begin_end_pairs.e + 1
+end
+
+function UI2D.HasMouse()
+	return has_mouse
+end
+
+function UI2D.GetMouseWheel( deltaX, deltaY )
+	mouse.wheel_x = deltaX
+	mouse.wheel_y = deltaY
 end
 
 function UI2D.SetWindowPosition( id, x, y )
@@ -705,6 +717,10 @@ end
 
 function UI2D.HasTextInput()
 	return has_text_input
+end
+
+function UI2D.IsModalOpen()
+	return modal_window
 end
 
 function UI2D.EndModalWindow()
@@ -1177,7 +1193,7 @@ function UI2D.TextBox( name, num_visible_chars, text )
 		end
 
 		if active_widget == cur_window.id .. name then
-			if lovr.system.wasKeyPressed( "tab" ) or lovr.system.wasKeyPressed( "return" ) then -- Deactivate self
+			if lovr.system.wasKeyPressed( "tab" ) or lovr.system.wasKeyPressed( "return" ) or lovr.system.wasKeyPressed( "kpenter" ) then -- Deactivate self
 				has_text_input = false
 				active_textbox = nil
 				active_widget = nil
@@ -1494,11 +1510,20 @@ function UI2D.CustomWidget( name, width, height )
 	if not exists then
 		local new_widget = {}
 		new_widget.id = cur_window.id .. name
+		new_widget.width = width
+		new_widget.height = height
 		new_widget.texture = lovr.graphics.newTexture( width, height, texture_flags )
 		new_widget.pass = lovr.graphics.newPass( new_widget.texture )
 		new_widget.pass:setProjection( 1, mat4():orthographic( new_widget.pass:getDimensions() ) )
 		table.insert( cur_window.cw, new_widget )
 		idx = #cur_window.cw
+	else
+		if cur_window.cw[ idx ].width ~= width or cur_window.cw[ idx ].height ~= height then
+			cur_window.cw[ idx ].width = width
+			cur_window.cw[ idx ].height = height
+			cur_window.cw[ idx ].texture = lovr.graphics.newTexture( width, height, texture_flags )
+			cur_window.cw[ idx ].pass:setCanvas( cur_window.cw[ idx ].texture )
+		end
 	end
 
 	local bbox = {}
@@ -1516,10 +1541,12 @@ function UI2D.CustomWidget( name, width, height )
 	local held = false
 	local released = false
 	local hovered = false
+	local wheelx, wheely = 0, 0
 
 	if not modal_window or (modal_window and modal_window == cur_window) then
 		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) and cur_window == active_window then
 			hovered = true
+			wheelx, wheely = mouse.wheel_x, mouse.wheel_y
 
 			if mouse.state == e_mouse_state.clicked then
 				clicked = true
@@ -1540,7 +1567,7 @@ function UI2D.CustomWidget( name, width, height )
 	table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = bbox, color = colors.button_border } )
 	cur_window.cw[ idx ].pass:reset()
 	cur_window.cw[ idx ].pass:setProjection( 1, mat4():orthographic( cur_window.cw[ idx ].pass:getDimensions() ) )
-	return cur_window.cw[ idx ].pass, clicked, held, released, hovered, mouse.x - cur_window.x - bbox.x, mouse.y - cur_window.y - bbox.y
+	return cur_window.cw[ idx ].pass, clicked, held, released, hovered, mouse.x - cur_window.x - bbox.x, mouse.y - cur_window.y - bbox.y, wheelx, wheely
 end
 
 function UI2D.NewFrame( main_pass )

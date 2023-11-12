@@ -177,7 +177,7 @@ function lovr.draw( pass )
 
 	UI2D.Begin( "Another window", 600, 50 )
 	UI2D.Label( "This is a custom widget" )
-	local ps, clicked, held, released, hovered, mx, my = UI2D.CustomWidget( "widget1", 250, 150 )
+	local ps, clicked, held, released, hovered, mx, my, wheelx, wheely = UI2D.CustomWidget( "widget1", 250, 150 )
 	DrawMyCustomWidget( ps, held, hovered, mx, my )
 	UI2D.End( pass )
 
