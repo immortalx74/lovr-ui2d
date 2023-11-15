@@ -1803,7 +1803,7 @@ function UI2D.CustomWidget( name, width, height )
 			cur_window.cw[ idx ].width = width
 			cur_window.cw[ idx ].height = height
 			framework.ReleaseTexture()
-			framework.NewTexture( width, height )
+			cur_window.cw[ idx ].texture = framework.NewTexture( width, height )
 			framework.SetCanvas( cur_window.cw[ idx ].pass, cur_window.cw[ idx ].texture )
 		end
 	end
