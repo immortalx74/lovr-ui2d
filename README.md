@@ -11,7 +11,7 @@ https://github.com/immortalx74/lovr-ui2d/assets/29693328/3b1e15cc-948f-401f-a236
 
 **How to use:**
 
-See `main.lua` for minimal and demo implementations. Bellow is the complete API documentation but some things will make more sense by examining the examples.
+See `main.lua` for minimal and demo implementations. Below is the complete API documentation but some things will make more sense by examining the examples.
 
 **Widgets:**
 
