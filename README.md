@@ -23,6 +23,7 @@ See `main.lua` for minimal and demo implementations. Below is the complete API d
  - SliderFloat
  - Label
  - CheckBox
+ - ToggleButton
  - RadioButton
  - TabBar
  - Dummy
@@ -157,6 +158,16 @@ NOTE: Horizontal Separator
 
 <span style="color:DeepSkyBlue">Returns:</span> `boolean`, true when clicked  
 NOTE: To set the state use this idiom: `if UI2D.CheckBox("My checkbox", my_state) then my_state = not my_state end`
+
+---
+`UI2D.ToggleButton(text, checked)`
+|Argument|Type|Description
+|:---|:---|:---|
+|`text`|string|toggle button text
+|`checked`|boolean|state
+
+<span style="color:DeepSkyBlue">Returns:</span> `boolean`, true when clicked  
+NOTE: To set the state use this idiom: `if UI2D.ToggleButton("My toggle button", my_state) then my_state = not my_state end`
 
 ---
 `UI2D.RadioButton(text, checked)`

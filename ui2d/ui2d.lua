@@ -55,6 +55,11 @@ color_themes.dark =
 	check_border = { 0, 0, 0 },
 	check_border_hover = { 0.5, 0.5, 0.5 },
 	check_mark = { 0.3, 0.3, 1 },
+	toggle_border = { 0, 0, 0 },
+	toggle_border_hover = { 0.5, 0.5, 0.5 },
+	toggle_handle = { 0.8, 0.8, 0.8 },
+	toggle_bg_off = { 0.3, 0.3, 0.3 },
+	toggle_bg_on = { 0.3, 0.3, 1 },
 	radio_border = { 0, 0, 0 },
 	radio_border_hover = { 0.5, 0.5, 0.5 },
 	radio_mark = { 0.3, 0.3, 1 },
@@ -102,6 +107,11 @@ color_themes.light =
 	check_border = { 0.000, 0.000, 0.000 },
 	check_border_hover = { 0.760, 0.760, 0.760 },
 	check_mark = { 0.000, 0.000, 0.000 },
+	toggle_border = { 0, 0, 0 },
+	toggle_border_hover = { 1, 1, 1 },
+	toggle_handle = { 1, 1, 1 },
+	toggle_bg_off = { 0.4, 0.4, 0.4 },
+	toggle_bg_on = { 0.830, 0.830, 0.830 },
 	radio_border = { 0.000, 0.000, 0.000 },
 	radio_border_hover = { 0.760, 0.760, 0.760 },
 	radio_mark = { 0.172, 0.172, 0.172 },
@@ -218,6 +228,14 @@ function framework.DrawCircle_LOVR( pass, x, y, radius, type )
 	pass:circle( x, y, 0, radius, 0, 0, 0, 0, type )
 end
 
+function framework.DrawCircleHalf_LOVR( pass, x, y, radius, type, angle1, angle2 )
+	pass:circle( x, y, 0, radius, 0, 0, 0, 0, type, angle1, angle2 )
+end
+
+function framework.DrawLine_LOVR( pass, x1, y1, x2, y2 )
+	pass:line( x1, y1, 0, x2, y2, 0 )
+end
+
 function framework.DrawText_LOVR( pass, text, x, y, w, h, text_w )
 	pass:text( text, x + (w / 2), y + (h / 2), 0 )
 end
@@ -316,6 +334,14 @@ end
 
 function framework.DrawCircle_LOVE( pass, x, y, radius, type )
 	love.graphics.circle( type, x, y, radius )
+end
+
+function framework.DrawCircleHalf_LOVE( pass, x, y, radius, type, angle1, angle2 )
+	love.graphics.arc( type, "open", x, y, radius, angle1, angle2 )
+end
+
+function framework.DrawLine_LOVE( pass, x1, y1, x2, y2 )
+	love.graphics.line( x1, y1, x2, y2 )
 end
 
 function framework.DrawText_LOVE( pass, text, x, y, w, h, text_w )
@@ -598,6 +624,8 @@ function UI2D.Init( type, size )
 		framework.SetProjection = framework.SetProjection_LOVR
 		framework.ReleaseTexture = framework.ReleaseTexture_LOVR
 		framework.SetMaterial = framework.SetMaterial_LOVR
+		framework.DrawCircleHalf = framework.DrawCircleHalf_LOVR
+		framework.DrawLine = framework.DrawLine_LOVR
 	else
 		framework.GetKeyDown = framework.GetKeyDown_LOVE
 		framework.NewSampler = framework.NewSampler_LOVE
@@ -622,6 +650,8 @@ function UI2D.Init( type, size )
 		framework.SetProjection = framework.SetProjection_LOVE
 		framework.ReleaseTexture = framework.ReleaseTexture_LOVE
 		framework.SetMaterial = framework.SetMaterial_LOVE
+		framework.DrawCircleHalf = framework.DrawCircleHalf_LOVE
+		framework.DrawLine = framework.DrawLine_LOVE
 	end
 
 	local info = debug.getinfo( 1, "S" )
@@ -880,6 +910,15 @@ function UI2D.End( main_pass )
 		elseif v.type == "circle_fill" then
 			framework.SetColor( cur_window.pass, v.color )
 			framework.DrawCircle( cur_window.pass, v.bbox.x + (v.bbox.w / 2), v.bbox.y + (v.bbox.h / 2), v.bbox.w / 3, "fill" )
+		elseif v.type == "circle_wire_half" then
+			framework.SetColor( cur_window.pass, v.color )
+			framework.DrawCircleHalf( cur_window.pass, v.bbox.x + (v.bbox.w / 2), v.bbox.y + (v.bbox.h / 2), v.bbox.w / 2, "line", v.angle1, v.angle2 )
+		elseif v.type == "circle_fill_half" then
+			framework.SetColor( cur_window.pass, v.color )
+			framework.DrawCircleHalf( cur_window.pass, v.bbox.x + (v.bbox.w / 2), v.bbox.y + (v.bbox.h / 2), v.bbox.w / 2, "fill", v.angle1, v.angle2 )
+		elseif v.type == "line" then
+			framework.SetColor( cur_window.pass, v.color )
+			framework.DrawLine( cur_window.pass, v.x1, v.y1, v.x2, v.y2 )
 		elseif v.type == "text" then
 			framework.SetColor( cur_window.pass, v.color )
 			local text_w = font.handle:getWidth( v.text )
@@ -1296,6 +1335,61 @@ function UI2D.CheckBox( text, checked )
 		table.insert( windows[ begin_idx ].command_list, { type = "text", text = "✔", bbox = check_rect, color = colors.check_mark } )
 	end
 
+	return result
+end
+
+function UI2D.ToggleButton( text, checked )
+	local cur_window = windows[ begin_idx ]
+	local text_w = font.handle:getWidth( text )
+
+	local bbox = {}
+	if layout.same_line then
+		bbox = { x = layout.x + layout.w + margin, y = layout.y, w = (2 * font.h) + margin + text_w, h = (2 * margin) + font.h }
+	elseif layout.same_column then
+		bbox = { x = layout.x, y = layout.y + layout.h + margin, w = (2 * font.h) + margin + text_w, h = (2 * margin) + font.h }
+	else
+		bbox = { x = margin, y = layout.y + layout.row_h + margin, w = (2 * font.h) + margin + text_w, h = (2 * margin) + font.h }
+	end
+
+	UpdateLayout( bbox )
+
+	local result = false
+	local col_border = colors.toggle_border
+
+	if not modal_window or (modal_window and modal_window == cur_window) then
+		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) and cur_window == active_window then
+			col_border = colors.toggle_border_hover
+			if mouse.state == e_mouse_state.clicked then
+				result = true
+			end
+		end
+	end
+
+	local half_left = { x = bbox.x, y = bbox.y + margin, w = font.h, h = font.h }
+	local half_right = { x = bbox.x + font.h, y = bbox.y + margin, w = font.h, h = font.h }
+	local middle = { x = bbox.x + (font.h / 2), y = bbox.y + margin, w = font.h, h = font.h }
+	local text_rect = { x = bbox.x + (2 * font.h) + margin, y = bbox.y, w = text_w + margin, h = bbox.h }
+
+	table.insert( windows[ begin_idx ].command_list, { type = "text", text = text, bbox = text_rect, color = colors.text } )
+
+	if checked and type( checked ) == "boolean" then
+		table.insert( windows[ begin_idx ].command_list, { type = "circle_fill_half", bbox = half_left, color = colors.toggle_bg_on, angle1 = math.pi / 2, angle2 = math.pi * 1.5 } )
+		table.insert( windows[ begin_idx ].command_list, { type = "circle_fill_half", bbox = half_right, color = colors.toggle_bg_on, angle1 = -math.pi / 2, angle2 = math.pi / 2 } )
+		table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = middle, color = colors.toggle_bg_on } )
+		table.insert( windows[ begin_idx ].command_list, { type = "circle_fill", bbox = half_right, color = colors.toggle_handle } )
+	else
+		table.insert( windows[ begin_idx ].command_list, { type = "circle_fill_half", bbox = half_left, color = colors.toggle_bg_off, angle1 = math.pi / 2, angle2 = math.pi * 1.5 } )
+		table.insert( windows[ begin_idx ].command_list, { type = "circle_fill_half", bbox = half_right, color = colors.toggle_bg_off, angle1 = -math.pi / 2, angle2 = math.pi / 2 } )
+		table.insert( windows[ begin_idx ].command_list, { type = "rect_fill", bbox = middle, color = colors.toggle_bg_off } )
+		table.insert( windows[ begin_idx ].command_list, { type = "circle_fill", bbox = half_left, color = colors.toggle_handle } )
+	end
+
+	table.insert( windows[ begin_idx ].command_list, { type = "circle_wire_half", bbox = half_left, color = col_border, angle1 = math.pi / 2, angle2 = math.pi * 1.5 } )
+	table.insert( windows[ begin_idx ].command_list, { type = "circle_wire_half", bbox = half_right, color = col_border, angle1 = -math.pi / 2, angle2 = math.pi / 2 } )
+	table.insert( windows[ begin_idx ].command_list,
+		{ type = "line", x1 = bbox.x + (font.h / 2), y1 = bbox.y + margin, x2 = bbox.x + (font.h * 1.5), y2 = bbox.y + margin, color = col_border } )
+	table.insert( windows[ begin_idx ].command_list,
+		{ type = "line", x1 = bbox.x + (font.h / 2), y1 = bbox.y + margin + font.h, x2 = bbox.x + (font.h * 1.5), y2 = bbox.y + margin + font.h, color = col_border } )
 	return result
 end
 

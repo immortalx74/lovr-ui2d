@@ -8,6 +8,8 @@ local icon = lovr.graphics.newTexture( "lovrlogo.png" )
 local tab_bar_idx = 1
 local check1 = true
 local check2 = false
+local toggle1 = false
+local toggle2 = true
 local rb_idx = 1
 local progress = { value = 0, adder = 0 }
 local txt1 = "482.32"
@@ -121,12 +123,19 @@ function lovr.draw( pass )
 	if UI2D.Button( "Font size +" ) then
 		UI2D.SetFontSize( UI2D.GetFontSize() + 1 )
 	end
+	UI2D.SameLine()
 	if UI2D.Button( "Font size -" ) then
 		UI2D.SetFontSize( UI2D.GetFontSize() - 1 )
 	end
 	sl1, released = UI2D.SliderInt( "another slider", sl1, 0, 100, 296 )
 	if released then
 		print( released, sl1 )
+	end
+	if UI2D.ToggleButton( "Toggle1", toggle1 ) then
+		toggle1 = not toggle1
+	end
+	if UI2D.ToggleButton( "Toggle2", toggle2 ) then
+		toggle2 = not toggle2
 	end
 	UI2D.Label( "Widgets on same line", true )
 	UI2D.Button( "Hello", 80 )
@@ -173,7 +182,7 @@ function lovr.draw( pass )
 	UI2D.End( pass )
 	UI2D.ResetColor( "window_bg" )
 
-	UI2D.Begin( "TabBar window", 300, 370 )
+	UI2D.Begin( "TabBar window", 300, 390 )
 	local was_clicked, idx = UI2D.TabBar( "my tab bar", { "first", "second", "third" }, tab_bar_idx )
 	if was_clicked then
 		tab_bar_idx = idx
