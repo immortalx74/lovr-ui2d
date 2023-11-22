@@ -30,6 +30,7 @@ local mouse = { x = 0, y = 0, state = e_mouse_state.idle, prev_frame = 0, this_f
 local layout = { x = 0, y = 0, w = 0, h = 0, row_h = 0, total_w = 0, total_h = 0, same_line = false, same_column = false }
 local texture_flags = { mipmaps = true, usage = { 'sample', 'render', 'transfer' } }
 local clamp_sampler
+local active_tooltip = { text = "", x = 0, y = 0 }
 
 local keys = {
 	[ "right" ] = { 0, 0, 0 },
@@ -44,6 +45,8 @@ local keys = {
 color_themes.dark =
 {
 	text = { 0.8, 0.8, 0.8 },
+	tooltip_bg = { 0, 0, 0 },
+	tooltip_border = { 0.3, 0.3, 0.3 },
 	window_bg = { 0.26, 0.26, 0.26 },
 	window_border = { 0, 0, 0 },
 	window_titlebar = { 0.08, 0.08, 0.08 },
@@ -96,6 +99,8 @@ color_themes.dark =
 color_themes.light =
 {
 	text = { 0.02, 0.02, 0.02 },
+	tooltip_bg = { 1, 1, 1 },
+	tooltip_border = { 0, 0, 0 },
 	window_bg = { 0.930, 0.930, 0.930 },
 	window_border = { 0.000, 0.000, 0.000 },
 	window_titlebar = { 0.8, 0.8, 0.8 },
@@ -490,7 +495,7 @@ local function UpdateLayout( bbox )
 	layout.same_column = false
 end
 
-local function Slider( type, name, v, v_min, v_max, width )
+local function Slider( type, name, v, v_min, v_max, width, tooltip )
 	local text = GetLabelPart( name )
 	local cur_window = windows[ begin_idx ]
 	local text_w = font.handle:getWidth( text )
@@ -517,6 +522,11 @@ local function Slider( type, name, v, v_min, v_max, width )
 
 	if not modal_window or (modal_window and modal_window == cur_window) then
 		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, slider_w, bbox.h ) and cur_window == active_window then
+			if tooltip then
+				active_tooltip.text = tooltip
+				active_tooltip.x = mouse.x
+				active_tooltip.y = mouse.y
+			end
 			col = colors.slider_bg_hover
 
 			if mouse.state == e_mouse_state.clicked then
@@ -1045,7 +1055,7 @@ function UI2D.SameColumn()
 	layout.same_column = true
 end
 
-function UI2D.Button( name, width, height )
+function UI2D.Button( name, width, height, tooltip )
 	local text = GetLabelPart( name )
 	local cur_window = windows[ begin_idx ]
 	local text_w = utf8.len( text ) * font.w
@@ -1074,6 +1084,11 @@ function UI2D.Button( name, width, height )
 
 	if not modal_window or (modal_window and modal_window == cur_window) then
 		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) and cur_window == active_window then
+			if tooltip then
+				active_tooltip.text = tooltip
+				active_tooltip.x = mouse.x
+				active_tooltip.y = mouse.y
+			end
 			col = colors.button_bg_hover
 			if mouse.state == e_mouse_state.clicked then
 				result = true
@@ -1091,15 +1106,16 @@ function UI2D.Button( name, width, height )
 	return result
 end
 
-function UI2D.SliderInt( name, v, v_min, v_max, width )
-	return Slider( e_slider_type.int, name, v, v_min, v_max, width )
+function UI2D.SliderInt( name, v, v_min, v_max, width, tooltip )
+	return Slider( e_slider_type.int, name, v, v_min, v_max, width, tooltip )
 end
 
-function UI2D.SliderFloat( name, v, v_min, v_max, width, num_decimals )
-	return Slider( e_slider_type.float, name, v, v_min, v_max, width, num_decimals )
+function UI2D.SliderFloat( name, v, v_min, v_max, width, num_decimals, tooltip )
+	return Slider( e_slider_type.float, name, v, v_min, v_max, width, num_decimals, tooltip )
 end
 
-function UI2D.ProgressBar( progress, width )
+function UI2D.ProgressBar( progress, width, tooltip )
+	local cur_window = windows[ begin_idx ]
 	if width and width >= (2 * margin) + (4 * font.w) then
 		width = width
 	else
@@ -1116,6 +1132,16 @@ function UI2D.ProgressBar( progress, width )
 	end
 
 	UpdateLayout( bbox )
+
+	if not modal_window or (modal_window and modal_window == cur_window) then
+		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) and cur_window == active_window then
+			if tooltip then
+				active_tooltip.text = tooltip
+				active_tooltip.x = mouse.x
+				active_tooltip.y = mouse.y
+			end
+		end
+	end
 
 	progress = Clamp( progress, 0, 100 )
 	local fill_w = math.floor( (width * progress) / 100 )
@@ -1142,7 +1168,7 @@ function UI2D.Separator()
 	table.insert( windows[ begin_idx ].command_list, { is_separator = true, type = "rect_fill", bbox = bbox, color = colors.separator } )
 end
 
-function UI2D.ImageButton( texture, width, height, text )
+function UI2D.ImageButton( texture, width, height, text, tooltip )
 	local cur_window = windows[ begin_idx ]
 	local width = width or texture:getWidth()
 	local height = height or texture:getHeight()
@@ -1175,6 +1201,11 @@ function UI2D.ImageButton( texture, width, height, text )
 
 	if not modal_window or (modal_window and modal_window == cur_window) then
 		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) and cur_window == active_window then
+			if tooltip then
+				active_tooltip.text = tooltip
+				active_tooltip.x = mouse.x
+				active_tooltip.y = mouse.y
+			end
 			table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = bbox, color = colors.image_button_border_highlight } )
 
 			if mouse.state == e_mouse_state.clicked then
@@ -1219,7 +1250,7 @@ function UI2D.Dummy( width, height )
 	UpdateLayout( bbox )
 end
 
-function UI2D.TabBar( name, tabs, idx )
+function UI2D.TabBar( name, tabs, idx, tooltip )
 	local cur_window = windows[ begin_idx ]
 	local bbox = {}
 
@@ -1243,6 +1274,11 @@ function UI2D.TabBar( name, tabs, idx )
 
 		if not modal_window or (modal_window and modal_window == cur_window) then
 			if PointInRect( mouse.x, mouse.y, x_off + cur_window.x, bbox.y + cur_window.y, tab_w, bbox.h ) and cur_window == active_window then
+				if tooltip then
+					active_tooltip.text = tooltip
+					active_tooltip.x = mouse.x
+					active_tooltip.y = mouse.y
+				end
 				col = colors.tab_bar_hover
 				if mouse.state == e_mouse_state.clicked and cur_window.id .. name then
 					idx = i
@@ -1299,7 +1335,7 @@ function UI2D.Label( text, compact )
 	table.insert( windows[ begin_idx ].command_list, { type = "text", text = text, bbox = bbox, color = colors.text } )
 end
 
-function UI2D.CheckBox( text, checked )
+function UI2D.CheckBox( text, checked, tooltip )
 	local cur_window = windows[ begin_idx ]
 	local text_w = font.handle:getWidth( text )
 
@@ -1319,6 +1355,11 @@ function UI2D.CheckBox( text, checked )
 
 	if not modal_window or (modal_window and modal_window == cur_window) then
 		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) and cur_window == active_window then
+			if tooltip then
+				active_tooltip.text = tooltip
+				active_tooltip.x = mouse.x
+				active_tooltip.y = mouse.y
+			end
 			col = colors.check_border_hover
 			if mouse.state == e_mouse_state.clicked then
 				result = true
@@ -1338,7 +1379,7 @@ function UI2D.CheckBox( text, checked )
 	return result
 end
 
-function UI2D.ToggleButton( text, checked )
+function UI2D.ToggleButton( text, checked, tooltip )
 	local cur_window = windows[ begin_idx ]
 	local text_w = font.handle:getWidth( text )
 
@@ -1358,6 +1399,11 @@ function UI2D.ToggleButton( text, checked )
 
 	if not modal_window or (modal_window and modal_window == cur_window) then
 		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) and cur_window == active_window then
+			if tooltip then
+				active_tooltip.text = tooltip
+				active_tooltip.x = mouse.x
+				active_tooltip.y = mouse.y
+			end
 			col_border = colors.toggle_border_hover
 			if mouse.state == e_mouse_state.clicked then
 				result = true
@@ -1393,7 +1439,7 @@ function UI2D.ToggleButton( text, checked )
 	return result
 end
 
-function UI2D.RadioButton( text, checked )
+function UI2D.RadioButton( text, checked, tooltip )
 	local cur_window = windows[ begin_idx ]
 	local text_w = font.handle:getWidth( text )
 
@@ -1413,6 +1459,11 @@ function UI2D.RadioButton( text, checked )
 
 	if not modal_window or (modal_window and modal_window == cur_window) then
 		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) and cur_window == active_window then
+			if tooltip then
+				active_tooltip.text = tooltip
+				active_tooltip.x = mouse.x
+				active_tooltip.y = mouse.y
+			end
 			col = colors.radio_border_hover
 
 			if mouse.state == e_mouse_state.clicked then
@@ -1433,7 +1484,7 @@ function UI2D.RadioButton( text, checked )
 	return result
 end
 
-function UI2D.TextBox( name, num_visible_chars, text )
+function UI2D.TextBox( name, num_visible_chars, text, tooltip )
 	local cur_window = windows[ begin_idx ]
 	local label = GetLabelPart( name )
 	local label_w = font.handle:getWidth( label )
@@ -1539,6 +1590,11 @@ function UI2D.TextBox( name, num_visible_chars, text )
 
 	if not modal_window or (modal_window and modal_window == cur_window) then
 		if PointInRect( mouse.x, mouse.y, text_rect.x + cur_window.x, text_rect.y + cur_window.y, text_rect.w, text_rect.h ) and cur_window == active_window then
+			if tooltip then
+				active_tooltip.text = tooltip
+				active_tooltip.x = mouse.x
+				active_tooltip.y = mouse.y
+			end
 			col1 = colors.textbox_bg_hover
 
 			if mouse.state == e_mouse_state.clicked then
@@ -1603,7 +1659,7 @@ function UI2D.ListBoxSetSelected( name, idx )
 	end
 end
 
-function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, selected, multi_select )
+function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, selected, multi_select, tooltip )
 	local cur_window = windows[ begin_idx ]
 	local exists, lst_idx = ListBoxExists( cur_window.id .. name )
 
@@ -1661,6 +1717,11 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 	if not modal_window or (modal_window and modal_window == cur_window) then
 		if cur_window == active_window then
 			if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) then -- whole listbox
+				if tooltip then
+					active_tooltip.text = tooltip
+					active_tooltip.x = mouse.x
+					active_tooltip.y = mouse.y
+				end
 				listbox_state[ lst_idx ].scroll_y = listbox_state[ lst_idx ].scroll_y - mouse.wheel_y
 				listbox_state[ lst_idx ].scroll_x = listbox_state[ lst_idx ].scroll_x - mouse.wheel_x
 			end
@@ -1878,7 +1939,7 @@ function UI2D.ListBox( name, num_visible_rows, num_visible_chars, collection, se
 	return result, listbox_state[ lst_idx ].selected_idx, t
 end
 
-function UI2D.CustomWidget( name, width, height )
+function UI2D.CustomWidget( name, width, height, tooltip )
 	local cur_window = windows[ begin_idx ]
 	local exists, idx = WidgetExists( cur_window, cur_window.id .. name )
 
@@ -1921,6 +1982,11 @@ function UI2D.CustomWidget( name, width, height )
 
 	if not modal_window or (modal_window and modal_window == cur_window) then
 		if PointInRect( mouse.x, mouse.y, bbox.x + cur_window.x, bbox.y + cur_window.y, bbox.w, bbox.h ) and cur_window == active_window then
+			if tooltip then
+				active_tooltip.text = tooltip
+				active_tooltip.x = mouse.x
+				active_tooltip.y = mouse.y
+			end
 			hovered = true
 			wheelx, wheely = mouse.wheel_x, mouse.wheel_y
 
@@ -1983,6 +2049,48 @@ function UI2D.RenderFrame( main_pass )
 				end
 				framework.SetMaterial( win.pass )
 				framework.SetColor( win.pass, { 1, 1, 1 } )
+			end
+			if i == 1 and active_tooltip.text ~= "" then -- Draw tooltip
+				local num_lines = GetLineCount( active_tooltip.text )
+				local text_w = font.handle:getWidth( active_tooltip.text )
+				local rect_x = active_tooltip.x + (text_w / 2) + font.h
+				local rect_w = text_w + (2 * margin)
+				local rect_h = (num_lines * font.h) + (2 * margin)
+				local rect_y = active_tooltip.y - (rect_h / 2)
+				local text_y = 0
+
+				local text_x = active_tooltip.x + font.h
+				if framework.type == "lovr" then
+					text_y = rect_y - margin
+				else
+					text_y = active_tooltip.y - (font.h / 2) - (num_lines * font.h)
+				end
+
+				local width, height
+				if framework.type == "lovr" then
+					width, height = lovr.system.getWindowDimensions()
+				else
+					width, height = love.window.getMode()
+				end
+				if mouse.x > width - rect_w - margin then
+					rect_x = active_tooltip.x - (text_w / 2) - font.h
+					text_x = active_tooltip.x - font.h - text_w
+				end
+
+				if mouse.y < rect_h then
+					rect_y = active_tooltip.y + (rect_h / 2)
+					text_y = active_tooltip.y + (font.h / 2)
+				end
+
+				framework.SetColor( main_pass, colors.tooltip_bg )
+				framework.DrawRect( main_pass, rect_x, rect_y, rect_w, rect_h, "fill" )
+				framework.SetColor( main_pass, colors.tooltip_border )
+				framework.DrawRect( main_pass, rect_x, rect_y, rect_w, rect_h, "line" )
+
+				framework.SetColor( main_pass, colors.text )
+				framework.SetFont( main_pass )
+				framework.DrawText( main_pass, active_tooltip.text, text_x, text_y, text_w, font.h, text_w )
+				active_tooltip.text = ""
 			end
 		else
 			table.remove( windows, i )

@@ -35,51 +35,55 @@ See `main.lua` for minimal and demo implementations. Below is the complete API d
 **API:**
 
 ---
-`UI2D.Button(name, width, height)`
+`UI2D.Button(name, width, height, tooltip)`
 |Argument|Type|Description
 |:---|:---|:---|
 |`name`|string|button's text
 |`width` _[opt]_|number|button width in pixels
 |`height` _[opt]_|number|button height in pixels
+|`tooltip` _[opt]_|string|tooltip text
  
 <span style="color:DeepSkyBlue">Returns:</span> `boolean`, true when clicked.  
 NOTE:  if no `width` and/or `height` are provided, the button size will be auto-calculated based on text. Otherwise, it will be set to `width` X `height` (with the text centered) or ignored if that size doesn't fit the text. 
 
 ---
-`UI2D.ImageButton(texture, width, height, text)`
+`UI2D.ImageButton(texture, width, height, text, tooltip)`
 |Argument|Type|Description
 |:---|:---|:---|
 |`texture`|texture/image|texture(lovr) or image(love)
 |`width`|number|image width in pixels
 |`height`|number|image height in pixels
 |`text` _[opt]_|string|optional text
+|`tooltip` _[opt]_|string|tooltip text
 
 <span style="color:DeepSkyBlue">Returns:</span> `boolean` , true when clicked.  
 
 ---
-`UI2D.CustomWidget(name, width, height)`
+`UI2D.CustomWidget(name, width, height, tooltip)`
 |Argument|Type|Description
 |:---|:---|:---|
 |`name`|string|custom widget name
 |`width`|number|width in pixels
 |`height`|number|height in pixels
+|`tooltip` _[opt]_|string|tooltip text
 
 <span style="color:DeepSkyBlue">Returns:</span> `Pass(lovr) or Canvas(love)`, `boolean`, `boolean`, `boolean`, `boolean`, `number`, `number`, `number`, `number` [1] Pass object(lovr) or Canvas(love), [2] clicked, [3] down, [4] released, [5] hovered, [6] mouse X, [7] mouse Y, [8] wheel X, [9] wheel Y  
 NOTE: General purpose widget for custom drawing/interaction. The returned Pass(lovr) or Canvas(love) can be used to do regular draw-commands. X and Y are the local 2D coordinates of the pointer (0,0 is top,left)
 
 ---
-`UI2D.TextBox(name, num_visible_chars, text)`
+`UI2D.TextBox(name, num_visible_chars, text, tooltip)`
 |Argument|Type|Description
 |:---|:---|:---|
 |`name`|string|textbox name
 |`num_visible_chars`|number|number of visible characters
 |`text`|string|text
+|`tooltip` _[opt]_|string|tooltip text
 
 <span style="color:DeepSkyBlue">Returns:</span> `string`, `boolean` [1] text, [2] finished editing.  
 NOTE: Always assign back to your string variable e.g. `mytext = UI2D.TextBox("My textbox, 10, mytext)`. To do validation on the edited text, check the finished editing return value.
 
 ---
-`UI2D.ListBox(name, num_visible_rows, num_visible_chars, collection, selected, multi_select)`
+`UI2D.ListBox(name, num_visible_rows, num_visible_chars, collection, selected, multi_select, tooltip)`
 |Argument|Type|Description
 |:---|:---|:---|
 |`name`|string|listbox name
@@ -88,12 +92,13 @@ NOTE: Always assign back to your string variable e.g. `mytext = UI2D.TextBox("My
 |`collection`|table|table of strings
 |`selected` _[opt]_|number or string|selected item index (in case it's a string, selects the 1st occurence of the item that matches the string)
 |`multi_select` _[opt]_|boolean|whether multi-select should be enabled
+|`tooltip` _[opt]_|string|tooltip text
 
 <span style="color:DeepSkyBlue">Returns:</span> `boolean`, `number`, `table`, [1] true when clicked, [2] selected item index, [3] table of selected item indices (if multi_select is true)  
 NOTE: The `UI2D.ListBoxSetSelected` helper can be used to select item(s) programmatically.
 
 ---
-`UI2D.SliderInt(name, v, v_min, v_max, width)`
+`UI2D.SliderInt(name, v, v_min, v_max, width, tooltip)`
 |Argument|Type|Description
 |:---|:---|:---|
 |`name`|string|slider text
@@ -101,13 +106,14 @@ NOTE: The `UI2D.ListBoxSetSelected` helper can be used to select item(s) program
 |`v_min`|number|minimum value
 |`v_max`|number|maximum value
 |`width` _[opt]_|number|total width in pixels of the slider, including it's text
+|`tooltip` _[opt]_|string|tooltip text
 
 <span style="color:DeepSkyBlue">Returns:</span> `number`, `boolean`, [1] current value, [2] true when released  
 NOTE: Always assign back to your slider-value, e.g. `myval = UI2D.SliderInt("my slider", myval, 0, 100)`
 If width is provided, it will be taken into account only if it exceeds the width of text, otherwise it will be ignored. 
 
 ---
-`UI2D.SliderFloat(name, v, v_min, v_max, width, num_decimals)`
+`UI2D.SliderFloat(name, v, v_min, v_max, width, num_decimals, tooltip)`
 |Argument|Type|Description
 |:---|:---|:---|
 |`name`|string|slider text
@@ -116,6 +122,7 @@ If width is provided, it will be taken into account only if it exceeds the width
 |`v_max`|number|maximum value
 |`width` _[opt]_|number|total width in pixels of the slider, including it's text
 |`num_decimals` _[opt]_|number|number of decimals to display
+|`tooltip` _[opt]_|string|tooltip text
 
 <span style="color:DeepSkyBlue">Returns:</span> `number`, `boolean`, [1] current value, [2] true when released   
 NOTE: Always assign back to your slider-value, e.g. `myval = UI2D.SliderFloat("my slider", myval, 0, 100)`
@@ -131,11 +138,12 @@ If `width` is provided, it will be taken into account only if it exceeds the wid
 <span style="color:DeepSkyBlue">Returns:</span> `nothing`  
 
 ---
-`UI2D.ProgressBar(progress, width)`
+`UI2D.ProgressBar(progress, width, tooltip)`
 |Argument|Type|Description
 |:---|:---|:---|
 |`progress`|number|progress percentage
 |`width` _[opt]_|number|width in pixels
+|`tooltip` _[opt]_|string|tooltip text
 
 <span style="color:DeepSkyBlue">Returns:</span> `nothing`  
 NOTE: Default width is 300 pixels
@@ -150,31 +158,34 @@ NOTE: Default width is 300 pixels
 NOTE: Horizontal Separator
 
 ---
-`UI2D.CheckBox(text, checked)`
+`UI2D.CheckBox(text, checked, tooltip)`
 |Argument|Type|Description
 |:---|:---|:---|
 |`text`|string|checkbox text
 |`checked`|boolean|state
+|`tooltip` _[opt]_|string|tooltip text
 
 <span style="color:DeepSkyBlue">Returns:</span> `boolean`, true when clicked  
 NOTE: To set the state use this idiom: `if UI2D.CheckBox("My checkbox", my_state) then my_state = not my_state end`
 
 ---
-`UI2D.ToggleButton(text, checked)`
+`UI2D.ToggleButton(text, checked, tooltip)`
 |Argument|Type|Description
 |:---|:---|:---|
 |`text`|string|toggle button text
 |`checked`|boolean|state
+|`tooltip` _[opt]_|string|tooltip text
 
 <span style="color:DeepSkyBlue">Returns:</span> `boolean`, true when clicked  
 NOTE: To set the state use this idiom: `if UI2D.ToggleButton("My toggle button", my_state) then my_state = not my_state end`
 
 ---
-`UI2D.RadioButton(text, checked)`
+`UI2D.RadioButton(text, checked, tooltip)`
 |Argument|Type|Description
 |:---|:---|:---|
 |`text`|string|radiobutton text
 |`checked`|boolean|state
+|`tooltip` _[opt]_|string|tooltip text
 
 <span style="color:DeepSkyBlue">Returns:</span> `boolean`, true when clicked  
 NOTE: To set the state on a group of RadioButtons use this idiom: 
@@ -183,12 +194,13 @@ NOTE: To set the state on a group of RadioButtons use this idiom:
 `-- etc...`
 
 ---
-`UI2D.TabBar(name, tabs, idx)`
+`UI2D.TabBar(name, tabs, idx, tooltip)`
 |Argument|Type|Description
 |:---|:---|:---|
 |`name`|string|TabBar name
 |`tabs`|table|a table of strings
 |`idx`|number|initial active tab index
+|`tooltip` _[opt]_|string|tooltip text
 
 <span style="color:DeepSkyBlue">Returns:</span> `boolean`, `number`, [1] true when clicked, [2] the selected tab index  
 

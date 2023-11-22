@@ -138,9 +138,9 @@ function lovr.draw( pass )
 		toggle2 = not toggle2
 	end
 	UI2D.Label( "Widgets on same line", true )
-	UI2D.Button( "Hello", 80 )
+	UI2D.Button( "Hello", 80, nil, "This is a Tooltip" )
 	UI2D.SameLine()
-	UI2D.Button( "World!", 80 )
+	UI2D.Button( "World!", 80, nil, "And this is\na multi-line\nTooltip" )
 	UI2D.End( pass )
 
 	UI2D.Begin( "utf8 text support: ΞΔΠΘ", 950, 50 )
