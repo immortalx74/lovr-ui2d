@@ -1233,7 +1233,7 @@ function UI2D.ImageButton( texture, width, height, text, tooltip )
 		table.insert( windows[ begin_idx ].command_list,
 			{ type = "text", text = text, bbox = { x = bbox.x + width, y = bbox.y, w = text_w + (2 * margin), h = bbox.h }, color = colors.text } )
 	else
-		table.insert( windows[ begin_idx ].command_list, { type = "image", bbox = bbox, texture = texture, color = { col, col, col } } )
+		table.insert( windows[ begin_idx ].command_list, { type = "image", bbox = bbox, texture = texture, image_w = original_w, image_h = original_h, color = { col, col, col } } )
 	end
 
 	return result
