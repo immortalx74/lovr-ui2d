@@ -1091,10 +1091,14 @@ function UI2D.Button( name, width, height, tooltip )
 			end
 			col = colors.button_bg_hover
 			if mouse.state == e_mouse_state.clicked then
-				result = true
+				active_widget = cur_window.id .. name
 			end
 			if mouse.state == e_mouse_state.held then
 				col = colors.button_bg_click
+			end
+			if mouse.state == e_mouse_state.released and active_widget == cur_window.id .. name then
+				active_widget = nil
+				result = true
 			end
 		end
 	end
@@ -1209,10 +1213,14 @@ function UI2D.ImageButton( texture, width, height, text, tooltip )
 			table.insert( windows[ begin_idx ].command_list, { type = "rect_wire", bbox = bbox, color = colors.image_button_border_highlight } )
 
 			if mouse.state == e_mouse_state.clicked then
-				result = true
+				active_widget = cur_window.id .. tostring( texture )
 			end
 			if mouse.state == e_mouse_state.held then
 				col = 0.7
+			end
+			if mouse.state == e_mouse_state.released and active_widget == cur_window.id .. tostring( texture ) then
+				active_widget = nil
+				result = true
 			end
 		end
 	end
@@ -1362,6 +1370,10 @@ function UI2D.CheckBox( text, checked, tooltip )
 			end
 			col = colors.check_border_hover
 			if mouse.state == e_mouse_state.clicked then
+				active_widget = cur_window.id .. text
+			end
+			if mouse.state == e_mouse_state.released and active_widget == cur_window.id .. text then
+				active_widget = nil
 				result = true
 			end
 		end
@@ -1406,6 +1418,10 @@ function UI2D.ToggleButton( text, checked, tooltip )
 			end
 			col_border = colors.toggle_border_hover
 			if mouse.state == e_mouse_state.clicked then
+				active_widget = cur_window.id .. text
+			end
+			if mouse.state == e_mouse_state.released and active_widget == cur_window.id .. text then
+				active_widget = nil
 				result = true
 			end
 		end
@@ -1467,6 +1483,10 @@ function UI2D.RadioButton( text, checked, tooltip )
 			col = colors.radio_border_hover
 
 			if mouse.state == e_mouse_state.clicked then
+				active_widget = cur_window.id .. text
+			end
+			if mouse.state == e_mouse_state.released and active_widget == cur_window.id .. text then
+				active_widget = nil
 				result = true
 			end
 		end
