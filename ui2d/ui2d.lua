@@ -495,7 +495,7 @@ local function UpdateLayout( bbox )
 	layout.same_column = false
 end
 
-local function Slider( type, name, v, v_min, v_max, width, tooltip )
+local function Slider( type, name, v, v_min, v_max, width, num_decimals, tooltip )
 	local text = GetLabelPart( name )
 	local cur_window = windows[ begin_idx ]
 	local text_w = font.handle:getWidth( text )
