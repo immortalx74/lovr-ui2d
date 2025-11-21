@@ -1666,7 +1666,8 @@ function UI2D.TextBox( name, num_visible_chars, text, tooltip )
 end
 
 function UI2D.ListBoxSetSelected( name, idx )
-	local exists, lst_idx = ListBoxExists( name )
+	local cur_window = windows[ begin_idx ]
+	local exists, lst_idx = ListBoxExists( cur_window.id .. name )
 	if exists then
 		if type( idx ) == "table" then
 			listbox_state[ lst_idx ].selection = {}
